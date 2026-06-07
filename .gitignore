@@ -1,0 +1,4 @@
+node_modules/
+.env
+*.tar.gz
+_server_log3.txt
