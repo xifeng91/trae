@@ -88,17 +88,19 @@ watch(
     <template v-else>
       <section class="content-shell">
         <header class="home-hero" aria-labelledby="home-title">
-          <h1 id="home-title">新闻头条</h1>
-          <p>THE DIGITAL CURATOR</p>
+          <h1 id="home-title">西风简报</h1>
         </header>
         <CategoryTabs v-model="activeCategory" :counts="stats" />
         <NewsList :items="filteredNews" />
       </section>
     </template>
 
-    <div class="floating-actions" aria-label="页面操作">
+    <div
+      class="fixed bottom-[max(18px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] z-[35] inline-grid gap-1 rounded-full bg-white/72 p-1 shadow-[0_14px_36px_rgba(15,23,42,0.18)] backdrop-blur-[8px] dark:bg-[#1e1e1e]/68 dark:shadow-[0_18px_42px_rgba(0,0,0,0.34)] max-[420px]:bottom-[max(14px,env(safe-area-inset-bottom))] max-[420px]:right-3"
+      aria-label="页面操作"
+    >
       <button
-        class="floating-action-button"
+        class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-transparent p-0 text-[var(--accent)] transition duration-200 hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] focus-visible:bg-[var(--accent-soft)] focus-visible:text-[var(--accent-strong)] focus-visible:outline-none active:translate-y-px"
         type="button"
         :disabled="isRefreshing"
         :aria-label="isRefreshing ? '正在刷新新闻' : '刷新新闻'"
@@ -109,7 +111,7 @@ watch(
         <span class="sr-only">{{ isRefreshing ? '刷新中' : '刷新' }}</span>
       </button>
       <button
-        class="floating-action-button"
+        class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-transparent p-0 text-[var(--accent)] transition duration-200 hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] focus-visible:bg-[var(--accent-soft)] focus-visible:text-[var(--accent-strong)] focus-visible:outline-none active:translate-y-px"
         type="button"
         :aria-label="isDarkMode ? '切换为亮色主题' : '切换为暗色主题'"
         :title="isDarkMode ? '亮色主题' : '暗色主题'"

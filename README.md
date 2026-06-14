@@ -34,7 +34,7 @@ news-app/
 │  └─ views/                # 页面级组件
 ├─ index.html               # Vite 前端入口
 ├─ server.js                # Express 后端服务入口
-├─ vite.config.js           # Vite 配置
+├─ vite.config.mjs          # Vite 配置
 ├─ package.json             # 项目依赖与脚本
 └─ .env.example             # 环境变量示例
 ```

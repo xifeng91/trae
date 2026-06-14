@@ -1,3 +1,7 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import "./base.css";
 @import "./layout.css";
 @import "./news.css";

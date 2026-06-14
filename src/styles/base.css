@@ -22,17 +22,17 @@
 
 :root.dark {
   color-scheme: dark;
-  --page-bg: #111827;
-  --surface: #172033;
-  --surface-muted: #202b40;
-  --surface-raised: rgba(23, 32, 51, 0.92);
-  --text-primary: #f2f6fb;
-  --text-secondary: #c3ccd8;
-  --text-muted: #8e9bad;
-  --line: #2f3b50;
+  --page-bg: #121212;
+  --surface: #1e1e1e;
+  --surface-muted: #242424;
+  --surface-raised: rgba(30, 30, 30, 0.92);
+  --text-primary: rgba(255, 255, 255, 0.87);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-muted: rgba(255, 255, 255, 0.38);
+  --line: rgba(255, 255, 255, 0.12);
   --accent: #0066cc;
   --accent-strong: #0066cc;
-  --accent-soft: #173654;
+  --accent-soft: rgba(0, 102, 204, 0.18);
   --shadow-card: none;
   --shadow-header: none;
 }

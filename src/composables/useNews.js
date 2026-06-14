@@ -5,6 +5,27 @@ import { loadNewsCache, saveNewsCache } from '../utils/storage';
 
 const POLL_INTERVAL = 60 * 1000;
 
+function getNewsTimestamp(item) {
+  const dateText = item?.date || '';
+  const timeText = item?.time || '';
+  const normalizedTime = /^\d{1,2}:\d{2}$/.test(timeText) ? timeText : '00:00';
+  const date = dateText ? new Date(`${dateText}T${normalizedTime}:00`) : new Date(timeText);
+  const timestamp = date.getTime();
+
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function sortNewsByDateTime(newsItems) {
+  return newsItems
+    .map((item, index) => ({
+      item,
+      index,
+      timestamp: getNewsTimestamp(item),
+    }))
+    .sort((current, next) => next.timestamp - current.timestamp || current.index - next.index)
+    .map(({ item }) => item);
+}
+
 function buildStats(newsItems) {
   const stats = {
     total: newsItems.length,
@@ -32,8 +53,12 @@ export function useNews() {
   const newsItems = computed(() => newsData.value?.news || []);
 
   const filteredNews = computed(() => {
-    if (activeCategory.value === '全部') return newsItems.value;
-    return newsItems.value.filter((item) => item.category === activeCategory.value);
+    const items =
+      activeCategory.value === '全部'
+        ? newsItems.value
+        : newsItems.value.filter((item) => item.category === activeCategory.value);
+
+    return sortNewsByDateTime(items);
   });
 
   const stats = computed(() => buildStats(newsItems.value));

@@ -22,6 +22,25 @@ export function formatUpdateTime(dateText) {
   return `${month}-${day} ${hour}:${minute}`;
 }
 
+export function formatNewsDateTime(dateText, timeText) {
+  if (!dateText && !timeText) return '时间待更新';
+
+  const normalizedTime = timeText || '00:00';
+  const date = dateText ? new Date(`${dateText}T${normalizedTime}:00`) : new Date(timeText);
+
+  if (Number.isNaN(date.getTime())) {
+    return [dateText, timeText].filter(Boolean).join(' ') || '时间待更新';
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+
+  return `${year}.${month}.${day} ${hour}:${minute}`;
+}
+
 export function splitParagraphs(text) {
   if (!text) return [];
   return text

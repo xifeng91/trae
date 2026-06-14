@@ -2,7 +2,7 @@
   width: min(var(--content-width), 100%);
   min-height: 100vh;
   margin: 0 auto;
-  padding: 34px 16px 92px;
+  padding: 8px 16px 38px;
 }
 
 .app-header {
@@ -118,19 +118,19 @@
 
 .content-shell {
   display: grid;
-  gap: 14px;
+  gap: 6px;
 }
 
 .home-hero {
   display: grid;
   gap: 12px;
-  padding: 60px 0 64px;
+  padding: 32px 0;
 }
 
 .home-hero h1 {
   margin: 0;
   color: var(--accent);
-  font-family: Georgia, "Songti SC", "SimSun", serif;
+  font-family: serif;
   font-size: 2.75rem;
   font-weight: 800;
   line-height: 1.04;
@@ -149,9 +149,10 @@
 
 .category-tabs {
   display: flex;
-  gap: 10px;
-  margin: 0 -16px;
-  padding: 0 16px 4px;
+  gap: 8px;
+  margin-bottom: 8px;
+  /* margin: 0 -16px; */
+  /* padding: 0 8px 4px; */
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -166,8 +167,7 @@
   justify-content: center;
   gap: 6px;
   flex: 0 0 auto;
-  min-height: 44px;
-  padding: 0 18px;
+  padding: 0 10px;
   color: var(--text-secondary);
   background: rgba(255, 253, 251, 0.7);
   border: 1px solid transparent;
@@ -207,42 +207,27 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
-.floating-actions {
-  position: fixed;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(18px, env(safe-area-inset-bottom));
-  z-index: 35;
-  display: inline-grid;
-  gap: 2px;
-  padding: 4px;
-  background: var(--surface-raised);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  box-shadow: none;
-  backdrop-filter: blur(16px);
+:root.dark .category-tab {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: transparent;
 }
 
-.floating-action-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 46px;
-  min-height: 46px;
-  padding: 0;
-  color: var(--accent);
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
-  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+:root.dark .category-tab:hover,
+:root.dark .category-tab:focus-visible {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.22);
 }
 
-.floating-action-button:hover,
-.floating-action-button:focus-visible {
-  color: var(--accent-strong);
-  background: var(--accent-soft);
-  outline: none;
+:root.dark .category-tab.active {
+  color: #ffffff;
+  background: var(--accent);
 }
 
-.floating-action-button:active {
-  transform: translateY(1px);
+:root.dark .category-count {
+  color: var(--text-muted);
+}
+
+:root.dark .category-tab.active .category-count {
+  color: rgba(255, 255, 255, 0.72);
 }
