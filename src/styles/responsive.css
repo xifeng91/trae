@@ -1,0 +1,122 @@
+@media (min-width: 768px) {
+  :root {
+    --header-height: 76px;
+  }
+
+  .app-header {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  .brand-link {
+    font-size: 1.35rem;
+  }
+
+  .brand-logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .home-page {
+    padding-top: 42px;
+    padding-right: 24px;
+    padding-bottom: 108px;
+    padding-left: 24px;
+  }
+
+  .home-hero {
+    padding: 78px 0 84px;
+  }
+
+  .home-hero h1 {
+    font-size: 3.25rem;
+  }
+
+  .home-hero p {
+    font-size: 1.05rem;
+  }
+
+  .category-tabs {
+    margin-right: -24px;
+    margin-left: -24px;
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  .news-card-main {
+    padding: 14px 16px;
+  }
+
+  .news-card.expanded .news-detail {
+    padding: 14px 16px 16px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .home-page {
+    --content-width: 820px;
+  }
+
+  .home-hero {
+    padding-top: 88px;
+    padding-bottom: 92px;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-link {
+    gap: 8px;
+    font-size: 1.08rem;
+  }
+
+  .brand-logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .header-actions {
+    gap: 2px;
+  }
+
+  .icon-button {
+    min-width: 44px;
+    padding: 0 8px;
+  }
+
+  .category-tab {
+    padding: 0 14px;
+  }
+
+  .news-card-main {
+    padding: 12px;
+  }
+
+  .home-page {
+    padding-top: 26px;
+    padding-bottom: 86px;
+  }
+
+  .home-hero {
+    padding: 48px 0 54px;
+  }
+
+  .home-hero h1 {
+    font-size: 2.45rem;
+  }
+
+  .home-hero p {
+    font-size: 0.92rem;
+  }
+
+  .floating-actions {
+    right: 12px;
+    bottom: max(14px, env(safe-area-inset-bottom));
+  }
+
+  .toast-message {
+    right: 12px;
+    bottom: 14px;
+    left: 12px;
+    text-align: center;
+  }
+}
