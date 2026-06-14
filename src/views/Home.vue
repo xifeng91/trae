@@ -11,10 +11,13 @@ const {
   activeCategory,
   errorMessage,
   filteredNews,
+  hasNextPage,
   isLoading,
+  isLoadingMore,
   isRefreshing,
   newsData,
   stats,
+  loadMore,
   loadNews,
   startPolling,
   triggerRefresh,
@@ -24,7 +27,7 @@ const toastMessage = ref('');
 const isDarkMode = ref(resolveInitialTheme());
 let toastTimer = null;
 
-const hasNews = computed(() => Boolean(newsData.value?.news?.length));
+const hasNews = computed(() => Boolean((newsData.value?.items || newsData.value?.news || []).length));
 
 function showToast(message) {
   toastMessage.value = message;
@@ -37,6 +40,11 @@ function showToast(message) {
 async function handleRefresh() {
   const success = await triggerRefresh();
   showToast(success ? '刷新任务已启动，数据已同步检查' : '刷新失败，请稍后重试');
+}
+
+async function handleLoadMore() {
+  const success = await loadMore();
+  if (!success) showToast('没有更多新闻了');
 }
 
 function toggleTheme() {
@@ -92,6 +100,12 @@ watch(
         </header>
         <CategoryTabs v-model="activeCategory" :counts="stats" />
         <NewsList :items="filteredNews" />
+        <div v-if="hasNextPage" class="load-more-row">
+          <button class="load-more-button" type="button" :disabled="isLoadingMore" @click="handleLoadMore">
+            <LoaderCircle v-if="isLoadingMore" class="spinning" :size="16" />
+            <span>{{ isLoadingMore ? '加载中' : '加载更多' }}</span>
+          </button>
+        </div>
       </section>
     </template>
 

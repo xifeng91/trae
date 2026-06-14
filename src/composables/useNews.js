@@ -1,11 +1,17 @@
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { fetchNews, refreshNews } from '../api/newsApi';
 import { CATEGORY_OPTIONS } from '../utils/categories';
 import { loadNewsCache, saveNewsCache } from '../utils/storage';
 
 const POLL_INTERVAL = 60 * 1000;
+const PAGE_SIZE = 8;
 
 function getNewsTimestamp(item) {
+  if (item?.publishedAt) {
+    const publishedTimestamp = new Date(item.publishedAt).getTime();
+    if (!Number.isNaN(publishedTimestamp)) return publishedTimestamp;
+  }
+
   const dateText = item?.date || '';
   const timeText = item?.time || '';
   const normalizedTime = /^\d{1,2}:\d{2}$/.test(timeText) ? timeText : '00:00';
@@ -41,50 +47,96 @@ function buildStats(newsItems) {
   return stats;
 }
 
+function normalizeNewsResponse(data) {
+  const items = data?.items || data?.news || [];
+
+  return {
+    date: data?.date || '',
+    updatedAt: data?.updatedAt || null,
+    isRefreshing: Boolean(data?.isRefreshing),
+    categories: data?.categories || CATEGORY_OPTIONS.filter((item) => item.value !== '全部').map((item) => item.value),
+    counts: data?.counts || null,
+    pagination: data?.pagination || {
+      page: 1,
+      pageSize: PAGE_SIZE,
+      total: items.length,
+    },
+    items,
+    message: data?.message || '',
+  };
+}
+
 export function useNews() {
   const newsData = ref(null);
   const activeCategory = ref('全部');
   const isLoading = ref(false);
+  const isLoadingMore = ref(false);
   const isRefreshing = ref(false);
   const errorMessage = ref('');
   const cacheSource = ref('');
   const pollTimer = ref(null);
-
-  const newsItems = computed(() => newsData.value?.news || []);
-
-  const filteredNews = computed(() => {
-    const items =
-      activeCategory.value === '全部'
-        ? newsItems.value
-        : newsItems.value.filter((item) => item.category === activeCategory.value);
-
-    return sortNewsByDateTime(items);
+  const currentPage = ref(1);
+  const pagination = ref({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    total: 0,
   });
 
-  const stats = computed(() => buildStats(newsItems.value));
-
+  const newsItems = computed(() => newsData.value?.items || []);
+  const filteredNews = computed(() => sortNewsByDateTime(newsItems.value));
+  const stats = computed(() => newsData.value?.counts || buildStats(newsItems.value));
   const featuredNews = computed(() => newsItems.value.find((item) => item.priority === 'P0') || newsItems.value[0] || null);
+  const hasNextPage = computed(() => {
+    const total = pagination.value.total || 0;
+    return currentPage.value * pagination.value.pageSize < total;
+  });
 
-  function setNewsData(data, source = '') {
-    newsData.value = data;
+  function setNewsData(data, source = '', { append = false } = {}) {
+    const normalizedData = normalizeNewsResponse(data);
+
+    if (append && newsData.value?.items?.length) {
+      normalizedData.items = [...newsData.value.items, ...normalizedData.items];
+    }
+
+    newsData.value = normalizedData;
+    pagination.value = normalizedData.pagination;
+    currentPage.value = normalizedData.pagination.page || 1;
     cacheSource.value = source;
-    if (data?.news?.length) saveNewsCache(data);
+
+    if (normalizedData.items.length) saveNewsCache(normalizedData);
   }
 
-  async function loadNews({ silent = false } = {}) {
+  async function loadNews({ silent = false, page = 1, append = false } = {}) {
     if (!silent) isLoading.value = true;
     errorMessage.value = '';
 
     try {
-      const data = await fetchNews();
-      if (data?.news?.length) {
-        setNewsData(data);
-        return data;
+      const data = await fetchNews({
+        category: activeCategory.value,
+        page,
+        pageSize: PAGE_SIZE,
+      });
+      const normalizedData = normalizeNewsResponse(data);
+
+      if (normalizedData.items.length || normalizedData.isRefreshing) {
+        setNewsData(normalizedData, '', { append });
+
+        if (!normalizedData.items.length) {
+          errorMessage.value = normalizedData.message || '新闻正在生成，请稍后刷新';
+        }
+
+        return normalizedData;
       }
-      throw new Error('新闻数据为空');
+
+      throw new Error(normalizedData.message || '新闻数据为空');
     } catch (error) {
-      const cached = loadNewsCache();
-      if (cached?.news?.length) {
+      if (append) {
+        errorMessage.value = error.message || '加载更多失败';
+        throw error;
+      }
+
+      const cached = normalizeNewsResponse(loadNewsCache());
+      if (cached.items.length) {
         setNewsData(cached, '缓存数据');
         return cached;
       }
@@ -103,7 +155,7 @@ export function useNews() {
     try {
       await refreshNews();
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      await loadNews({ silent: true });
+      await loadNews({ silent: true, page: 1 });
       return true;
     } catch (error) {
       errorMessage.value = error.message || '刷新失败';
@@ -115,17 +167,42 @@ export function useNews() {
 
   async function checkUpdates() {
     try {
-      const latest = await fetchNews();
-      if (!latest?.news?.length) return false;
+      const latest = await fetchNews({
+        category: activeCategory.value,
+        page: 1,
+        pageSize: PAGE_SIZE,
+      });
+      const normalizedLatest = normalizeNewsResponse(latest);
+      if (!normalizedLatest.items.length) return false;
 
-      if (!newsData.value || latest.updatedAt !== newsData.value.updatedAt) {
-        setNewsData(latest);
+      if (!newsData.value || normalizedLatest.updatedAt !== newsData.value.updatedAt) {
+        setNewsData(normalizedLatest);
         return true;
       }
 
       return false;
     } catch (error) {
       return false;
+    }
+  }
+
+  async function loadMore() {
+    if (!hasNextPage.value || isLoadingMore.value) return false;
+
+    isLoadingMore.value = true;
+
+    try {
+      await loadNews({
+        silent: true,
+        page: currentPage.value + 1,
+        append: true,
+      });
+      return true;
+    } catch (error) {
+      errorMessage.value = error.message || '加载更多失败';
+      return false;
+    } finally {
+      isLoadingMore.value = false;
     }
   }
 
@@ -154,16 +231,25 @@ export function useNews() {
 
   onBeforeUnmount(stopPolling);
 
+  watch(activeCategory, () => {
+    currentPage.value = 1;
+    loadNews({ page: 1 }).catch(() => {});
+  });
+
   return {
     activeCategory,
     cacheSource,
     errorMessage,
     featuredNews,
     filteredNews,
+    hasNextPage,
     isLoading,
+    isLoadingMore,
     isRefreshing,
     newsData,
+    pagination,
     stats,
+    loadMore,
     loadNews,
     startPolling,
     triggerRefresh,

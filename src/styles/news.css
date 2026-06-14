@@ -42,6 +42,46 @@
   border-radius: var(--radius-md);
 }
 
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 2px;
+}
+
+.load-more-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 132px;
+  min-height: 44px;
+  gap: 8px;
+  color: var(--accent-strong);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.load-more-button:hover,
+.load-more-button:focus-visible {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-color: rgba(0, 102, 204, 0.18);
+  outline: none;
+}
+
+.load-more-button:active {
+  transform: translateY(1px);
+}
+
+.load-more-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  transform: none;
+}
+
 .toast-message {
   position: fixed;
   right: 24px;

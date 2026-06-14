@@ -14,7 +14,7 @@ const props = defineProps({
 const isExpanded = ref(false);
 
 const categoryColor = computed(() => CATEGORY_META[props.news.category]?.color || '#64748b');
-const displayDateTime = computed(() => formatNewsDateTime(props.news.date, props.news.time));
+const displayDateTime = computed(() => formatNewsDateTime(props.news.date, props.news.time, props.news.publishedAt));
 const paragraphs = computed(() => splitParagraphs(props.news.interpretation));
 const sourceHost = computed(() => getSourceHost(props.news.sourceUrl));
 </script>

@@ -3,4 +3,9 @@ node_modules/
 *.tar.gz
 _server_log3.txt
 .playwright-mcp
+.playwright-cli
 dist
+news-api/.env
+news-api/storage/*.json
+news-api/storage/*.tmp
+!news-api/storage/.gitkeep

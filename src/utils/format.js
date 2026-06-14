@@ -22,7 +22,20 @@ export function formatUpdateTime(dateText) {
   return `${month}-${day} ${hour}:${minute}`;
 }
 
-export function formatNewsDateTime(dateText, timeText) {
+export function formatNewsDateTime(dateText, timeText, isoText = '') {
+  if (isoText) {
+    const isoDate = new Date(isoText);
+    if (!Number.isNaN(isoDate.getTime())) {
+      const year = isoDate.getFullYear();
+      const month = String(isoDate.getMonth() + 1).padStart(2, '0');
+      const day = String(isoDate.getDate()).padStart(2, '0');
+      const hour = String(isoDate.getHours()).padStart(2, '0');
+      const minute = String(isoDate.getMinutes()).padStart(2, '0');
+
+      return `${year}.${month}.${day} ${hour}:${minute}`;
+    }
+  }
+
   if (!dateText && !timeText) return '时间待更新';
 
   const normalizedTime = timeText || '00:00';

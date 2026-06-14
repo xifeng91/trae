@@ -2,14 +2,15 @@
   "name": "daily-news-briefing",
   "version": "2.0.0",
   "description": "每日简报 - 动态新闻聚合与AI解读系统",
-  "main": "server.js",
+  "main": "news-api/src/index.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node news-api/src/index.js",
     "dev": "vite --host 0.0.0.0",
-    "dev:server": "node server.js",
+    "dev:api": "node news-api/src/index.js",
+    "dev:server": "npm run dev:api",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "fetch": "node backend/manualFetch.js"
+    "check:api": "find news-api/src -name '*.js' -print -exec node --check {} \\;"
   },
   "dependencies": {
     "axios": "^1.6.2",
