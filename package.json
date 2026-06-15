@@ -1,18 +1,13 @@
 {
-  "name": "daily-news-briefing",
-  "version": "2.0.0",
-  "description": "每日简报 - 动态新闻聚合与AI解读系统",
-  "main": "server.js",
+  "name": "daily-news-app",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.6.0",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
-    "fetch": "node backend/manualFetch.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "node-cron": "^3.0.3",
-    "rss-parser": "^3.13.0",
-    "axios": "^1.6.2",
-    "dotenv": "^16.3.1"
+    "dev:web": "pnpm --filter daily-news-web dev",
+    "dev:api": "pnpm --filter daily-news-api dev",
+    "build:web": "pnpm --filter daily-news-web build",
+    "preview:web": "pnpm --filter daily-news-web preview",
+    "check:api": "pnpm --filter daily-news-api check"
   }
 }

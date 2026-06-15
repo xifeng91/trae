@@ -1,0 +1,117 @@
+.news-list {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-block {
+  display: grid;
+  gap: 8px;
+}
+
+.detail-label {
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.detail-block p {
+  margin: 0;
+  color: #747a96;
+  font-size: 11px;
+  line-height: 1.85;
+}
+
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 36px;
+  gap: 6px;
+  color: var(--accent-strong);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.empty-state {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+}
+
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 2px;
+}
+
+.load-more-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 132px;
+  min-height: 44px;
+  gap: 8px;
+  color: var(--accent-strong);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 700;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.load-more-button:hover,
+.load-more-button:focus-visible {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-color: rgba(0, 102, 204, 0.18);
+  outline: none;
+}
+
+.load-more-button:active {
+  transform: translateY(1px);
+}
+
+.load-more-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  transform: none;
+}
+
+.toast-message {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  padding: 12px 16px;
+  color: #ffffff;
+  background: #17202a;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+:root.dark .detail-block p {
+  color: var(--text-secondary);
+}
+
+:root.dark .toast-message {
+  color: #17202a;
+  background: #f2f6fb;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
+}

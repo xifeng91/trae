@@ -223,11 +223,15 @@ app.post('/api/refresh', (req, res) => {
 // 静态文件服务
 // 上线后用 Nginx 代理静态文件，此部分可注释掉
 // ============================================
-app.use(express.static(path.join(__dirname)));
+const STATIC_DIR = fs.existsSync(path.join(__dirname, 'dist'))
+  ? path.join(__dirname, 'dist')
+  : __dirname;
 
-// SPA 兜底（首页）
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+app.use(express.static(STATIC_DIR));
+
+// SPA 兜底（首页和前端路由）
+app.get(/^\/(?!api\/).*/, (req, res) => {
+  res.sendFile(path.join(STATIC_DIR, 'index.html'));
 });
 
 // ============================================

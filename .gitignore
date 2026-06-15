@@ -1,4 +1,17 @@
 node_modules/
 .env
+.env.local
 *.tar.gz
 _server_log3.txt
+.playwright-mcp
+.playwright-cli
+dist/
+news-web/.env
+news-web/.env.local
+news-web/.env.*.local
+news-web/dist/
+news-api/.env
+news-api/.env.local
+news-api/storage/*.json
+news-api/storage/*.tmp
+!news-api/storage/.gitkeep
