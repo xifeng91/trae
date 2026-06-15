@@ -1,0 +1,5 @@
+packages:
+  - news-web
+  - news-api
+allowBuilds:
+  esbuild: true

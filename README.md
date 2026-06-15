@@ -10,15 +10,16 @@
 - 本地安装依赖和启动命令
 - 后续前后端独立改造方案
 - 目标接口、刷新策略和部署方式
-- 旧版前端代码的归档位置
+- 旧代码的归档位置
 
 ## 改造目标
 
-当前项目已开始按前后端独立方向改造。前端保留现有 Vue 3 + Vite 结构，后端新增为可独立启动的 `news-api` 项目：
+当前项目已按前后端独立方向拆分。前端是独立的 `news-web` 静态应用，后端是独立的 `news-api` API 服务，历史单体代码统一归档到 `old-code`：
 
 ```text
-./src/          # Vue 3 + Vite 前端，只负责展示与交互
+./news-web/     # Vue 3 + Vite 前端，只负责展示与交互
 ./news-api/     # Node.js 后端，负责新闻抓取、AI 解读、缓存和接口
+./old-code/     # 旧单体服务、旧缓存和旧原生前端归档
 ```
 
 前端部署后通过相对路径请求 `/api`，生产环境由 Nginx 统一分发：
@@ -36,29 +37,29 @@ http://ECS公网IP/api     -> 后端 Node API
 
 ```text
 news-app/
-├─ backend/                 # 后端业务模块
-│  ├─ aiInterpreter.js      # AI 解读、短摘要、副标题生成
-│  ├─ newsAggregator.js     # 新闻去重、排序、分类统计
-│  └─ rssFetcher.js         # RSS 新闻源抓取
-├─ data/
-│  └─ news.json             # 新闻缓存数据
-├─ dist/                    # Vite 生产构建产物
-├─ reference/
-│  └─ legacy-frontend/      # 旧版原生前端代码归档
-├─ src/                     # 新版 Vue 前端源码
-│  ├─ api/                  # Axios 请求封装
-│  ├─ components/           # 页面组件
-│  ├─ composables/          # 组合式业务逻辑
-│  ├─ router/               # Vue Router 配置
-│  ├─ styles/               # 全局样式
-│  ├─ utils/                # 工具函数
-│  └─ views/                # 页面级组件
-├─ index.html               # Vite 前端入口
-├─ news-api/                 # 新版独立后端 API 项目
-├─ server.js                # Express 后端服务入口
-├─ vite.config.mjs          # Vite 配置
-├─ package.json             # 项目依赖与脚本
-└─ .env.example             # 环境变量示例
+├─ news-web/                # 独立前端项目
+│  ├─ src/                  # Vue 3 + Vite 前端源码
+│  │  ├─ api/               # Axios 请求封装
+│  │  ├─ components/        # 页面组件
+│  │  ├─ composables/       # 组合式业务逻辑
+│  │  ├─ router/            # Vue Router 配置
+│  │  ├─ styles/            # 全局样式
+│  │  ├─ utils/             # 工具函数
+│  │  └─ views/             # 页面级组件
+│  ├─ public/               # 静态资源
+│  ├─ index.html            # Vite 前端入口
+│  ├─ vite.config.mjs       # Vite 配置
+│  ├─ package.json
+│  └─ .env.example
+├─ news-api/                # 独立后端 API 项目
+├─ old-code/                # 旧代码归档，不参与当前构建
+│  ├─ backend/              # 旧单体服务业务模块
+│  ├─ data/                 # 旧缓存数据
+│  ├─ reference/            # 旧原生前端归档
+│  ├─ server.js             # 旧 Express 单体入口
+│  └─ .env.example          # 旧单体环境变量示例
+├─ AGENTS.md
+└─ README.md
 ```
 
 新版后端结构：
@@ -88,26 +89,30 @@ news-api/
 └─ .env.example
 ```
 
-前端保持现有 Vue 3 架构，通过 `/api` 请求新版后端。
+前端通过 `/api` 请求新版后端，生产环境由 Nginx 反向代理到 `news-api`。
 
 ## 安装依赖
 
+项目使用 pnpm workspace 管理前后端依赖，在根目录安装即可：
+
 ```bash
-npm install
+pnpm install
 ```
 
 ## 环境配置
 
-复制环境变量示例文件：
+前端通常不需要额外配置，默认通过相对路径 `/api` 请求后端。如需本地覆盖：
 
 ```bash
+cd news-web
 cp .env.example .env
 ```
 
-根据需要配置 `PORT`、`DEEPSEEK_API_KEY`、`AI_MODEL` 等变量。新版后端也提供独立示例：
+后端配置：
 
 ```bash
-cp news-api/.env.example news-api/.env
+cd news-api
+cp .env.example .env
 ```
 
 敏感信息只允许放在后端 `.env` 或服务器环境变量中，禁止写入前端源码、README 示例值和 Git 仓库。
@@ -117,25 +122,25 @@ cp news-api/.env.example news-api/.env
 开发前端：
 
 ```bash
-npm run dev
+pnpm dev:web
 ```
 
-启动新版后端：
+启动后端：
 
 ```bash
-npm run dev:api
+pnpm dev:api
 ```
 
 生产构建前端：
 
 ```bash
-npm run build
+pnpm build:web
 ```
 
-启动生产服务：
+启动生产后端：
 
 ```bash
-npm start
+pnpm --filter daily-news-api start
 ```
 
 ## 目标接口设计
@@ -260,7 +265,7 @@ AI 流程建议异步执行，原因是每类最多 24 条、合计最多 96 条
 ```text
 ECS
 ├─ Nginx
-│  ├─ /      -> 前端 dist 静态文件
+│  ├─ /      -> news-web/dist 静态文件
 │  └─ /api   -> 反向代理到 Node 后端 localhost:3000
 ├─ Node.js
 ├─ PM2
@@ -274,15 +279,7 @@ http://ECS公网IP/
 http://ECS公网IP/api/health
 ```
 
-后端环境变量只放在服务器：
-
-```text
-PORT=3000
-DEEPSEEK_API_KEY=你的新密钥
-AI_MODEL=deepseek-chat
-CRON_SCHEDULE=0 0 */2 * * *
-MAX_NEWS_PER_CATEGORY=24
-```
+后端环境变量只放在服务器或 `news-api/.env`，真实密钥不要写入 README、前端源码、构建产物或 Git 仓库。
 
 ## 改造步骤
 
@@ -292,8 +289,9 @@ MAX_NEWS_PER_CATEGORY=24
 4. 已完成：实现 80 字概括和 150 字解读，支持 AI 失败降级
 5. 已完成：实现 `/api/news`、`/api/refresh`、`/api/refresh/status`
 6. 已完成：前端适配新字段、分页展示 8 条、源地址跳转
-7. 待执行：本地验收，确认接口可访问、页面可显示、任务日志正常
-8. 待执行：ECS 部署，使用 Nginx 托管前端并代理 `/api` 到后端
+7. 已完成：前端移动到 `news-web`，旧单体代码归档到 `old-code`
+8. 待执行：本地验收，确认接口可访问、页面可显示、任务日志正常
+9. 待执行：ECS 部署，使用 Nginx 托管前端并代理 `/api` 到后端
 
 ## 验收标准
 
@@ -306,12 +304,12 @@ MAX_NEWS_PER_CATEGORY=24
 - 前端可通过新闻卡片跳转至源地址
 - 阿里云 ECS 公网 IP 可访问页面和 `/api/health`
 
-## 旧版前端
+## 旧代码归档
 
-旧版原生 `HTML + CSS + JavaScript` 前端已归档到：
+旧代码已统一归档到：
 
 ```text
-reference/legacy-frontend/
+old-code/
 ```
 
-该目录只用于参考，不参与当前项目构建。
+其中 `old-code/server.js`、`old-code/backend/` 和 `old-code/data/` 属于旧单体后端；`old-code/reference/legacy-frontend/` 是旧版原生 `HTML + CSS + JavaScript` 前端。该目录只用于参考，不参与当前前后端构建。

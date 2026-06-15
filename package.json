@@ -1,31 +1,13 @@
 {
-  "name": "daily-news-briefing",
-  "version": "2.0.0",
-  "description": "每日简报 - 动态新闻聚合与AI解读系统",
-  "main": "news-api/src/index.js",
+  "name": "daily-news-app",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.6.0",
   "scripts": {
-    "start": "node news-api/src/index.js",
-    "dev": "vite --host 0.0.0.0",
-    "dev:api": "node news-api/src/index.js",
-    "dev:server": "npm run dev:api",
-    "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0",
-    "check:api": "find news-api/src -name '*.js' -print -exec node --check {} \\;"
-  },
-  "dependencies": {
-    "axios": "^1.6.2",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "lucide-vue-next": "^0.468.0",
-    "node-cron": "^3.0.3",
-    "rss-parser": "^3.13.0",
-    "vue": "^3.5.35",
-    "vue-router": "^4.6.4"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.3.1",
-    "@vitejs/plugin-vue": "^5.2.4",
-    "tailwindcss": "^4.3.1",
-    "vite": "^5.4.21"
+    "dev:web": "pnpm --filter daily-news-web dev",
+    "dev:api": "pnpm --filter daily-news-api dev",
+    "build:web": "pnpm --filter daily-news-web build",
+    "preview:web": "pnpm --filter daily-news-web preview",
+    "check:api": "pnpm --filter daily-news-api check"
   }
 }

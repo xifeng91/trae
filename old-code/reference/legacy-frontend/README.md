@@ -14,4 +14,4 @@ legacy-frontend/
    └─ newsData.js
 ```
 
-当前项目运行入口已迁移到根目录 `index.html` 和 `src/`，这里的文件不再参与构建和线上访问。
+当前项目运行入口已迁移到 `news-web/index.html` 和 `news-web/src/`，这里的文件不再参与构建和线上访问。
