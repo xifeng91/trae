@@ -41,10 +41,23 @@ function buildStats(newsItems) {
   };
 
   CATEGORY_OPTIONS.filter((item) => item.value !== '全部').forEach((category) => {
-    stats[category.value] = newsItems.filter((item) => item.category === category.value).length;
+    stats[category.value] = newsItems.filter((item) => item.category === category.value || item.topics?.includes(category.value)).length;
   });
 
   return stats;
+}
+
+function normalizeNewsItem(item = {}) {
+  return {
+    ...item,
+    overview: item.overview || item.summary || item.shortSummary || item.rawSummary || item.title || '',
+    imageUrl: item.imageUrl || '',
+    imageAlt: item.imageAlt || item.title || '',
+    topics: Array.isArray(item.topics) ? item.topics : [],
+    interpretation: '',
+    interpretationStatus: item.interpretationStatus || item.aiStatus || 'pending',
+    signals: Array.isArray(item.signals) ? item.signals : [],
+  };
 }
 
 function normalizeNewsResponse(data) {
@@ -53,6 +66,9 @@ function normalizeNewsResponse(data) {
   return {
     date: data?.date || '',
     updatedAt: data?.updatedAt || null,
+    retentionHours: data?.retentionHours || 24,
+    windowStartAt: data?.windowStartAt || '',
+    windowEndAt: data?.windowEndAt || '',
     isRefreshing: Boolean(data?.isRefreshing),
     categories: data?.categories || CATEGORY_OPTIONS.filter((item) => item.value !== '全部').map((item) => item.value),
     counts: data?.counts || null,
@@ -61,7 +77,7 @@ function normalizeNewsResponse(data) {
       pageSize: PAGE_SIZE,
       total: items.length,
     },
-    items,
+    items: items.map(normalizeNewsItem),
     message: data?.message || '',
   };
 }
@@ -118,17 +134,14 @@ export function useNews() {
       });
       const normalizedData = normalizeNewsResponse(data);
 
-      if (normalizedData.items.length || normalizedData.isRefreshing) {
-        setNewsData(normalizedData, '', { append });
+      setNewsData(normalizedData, '', { append });
 
-        if (!normalizedData.items.length) {
-          errorMessage.value = normalizedData.message || '新闻正在生成，请稍后刷新';
-        }
-
-        return normalizedData;
+      const total = normalizedData.counts?.total ?? normalizedData.pagination.total;
+      if (!normalizedData.items.length && (normalizedData.isRefreshing || total === 0)) {
+        errorMessage.value = normalizedData.message || '新闻正在生成，请稍后刷新';
       }
 
-      throw new Error(normalizedData.message || '新闻数据为空');
+      return normalizedData;
     } catch (error) {
       if (append) {
         errorMessage.value = error.message || '加载更多失败';

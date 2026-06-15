@@ -15,6 +15,11 @@ function readNumber(name, fallback) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
+function readOptionalNumber(name) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
 function readBoolean(name, fallback) {
   const value = process.env[name];
   if (value === undefined) return fallback;
@@ -27,8 +32,10 @@ const env = {
   deepseekApiUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1/chat/completions',
   aiModel: process.env.AI_MODEL || 'deepseek-chat',
   aiConcurrency: readNumber('AI_CONCURRENCY', 3),
+  aiInterpretationMaxTokens: readOptionalNumber('AI_INTERPRETATION_MAX_TOKENS'),
   maxItemsPerFeed: readNumber('MAX_ITEMS_PER_FEED', 30),
   maxNewsPerCategory: readNumber('MAX_NEWS_PER_CATEGORY', 24),
+  newsRetentionHours: readNumber('NEWS_RETENTION_HOURS', 24),
   newsPageSize: readNumber('NEWS_PAGE_SIZE', 8),
   cronSchedule: process.env.CRON_SCHEDULE || '0 0 */2 * * *',
   initialRefreshOnStart: readBoolean('INITIAL_REFRESH_ON_START', true),

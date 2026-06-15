@@ -17,13 +17,6 @@
     height: 38px;
   }
 
-  .home-page {
-    padding-top: 8px;
-    padding-right: 24px;
-    padding-bottom: 108px;
-    padding-left: 24px;
-  }
-
   .home-hero {
     padding: 78px 0 84px;
   }
@@ -37,10 +30,19 @@
   }
 
   .category-tabs {
-    margin-right: -24px;
-    margin-left: -24px;
-    padding-right: 24px;
-    padding-left: 24px;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .news-list {
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .load-more-row {
+    padding-right: 0;
+    padding-bottom: 108px;
+    padding-left: 0;
   }
 
 }
@@ -76,19 +78,6 @@
     padding: 0 8px;
   }
 
-  .category-tab {
-    padding: 4px 10px;
-  }
-
-  .home-page {
-    padding-top: 8px;
-    padding-bottom: 36px;
-  }
-
-  .home-hero {
-    padding: 18px 0 6px;
-  }
-
   .home-hero h1 {
     font-size: 2.45rem;
   }
@@ -98,8 +87,8 @@
   }
 
   .toast-message {
+    top: max(12px, env(safe-area-inset-top));
     right: 12px;
-    bottom: 14px;
     left: 12px;
     text-align: center;
   }

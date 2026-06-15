@@ -276,7 +276,7 @@ const App = {
     );
 
     if (filtered.length === 0) {
-      this.els.newsList.innerHTML = '<div class="empty-state">暂无相关分类的新闻</div>';
+      this.els.newsList.innerHTML = '<div class="min-h-11 py-3 text-center text-xs font-semibold text-[#A4A9BC]">暂无相关分类的新闻</div>';
       return;
     }
 
@@ -424,7 +424,7 @@ const App = {
   /** 显示错误提示 */
   showError(msg) {
     this.els.loading.style.display = 'none';
-    this.els.newsList.innerHTML = `<div class="empty-state">${msg}</div>`;
+    this.els.newsList.innerHTML = `<div class="min-h-11 py-3 text-center text-xs font-semibold text-[#A4A9BC]">${msg}</div>`;
     this.els.newsList.style.display = 'block';
   }
 };

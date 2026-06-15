@@ -1,7 +1,7 @@
 const env = require('../config/env');
-const { CATEGORY_VALUES, PRIORITY_ORDER } = require('../constants/categories');
-const { getDateKey, getTimeText, toDate } = require('../utils/dateUtils');
-const { buildStableId, limitText, normalizeTitle, stripHtml } = require('../utils/textUtils');
+const { CATEGORY_VALUES, INVESTMENT_TOPIC, PRIORITY_ORDER, TOPIC_VALUES } = require('../constants/categories');
+const { getDateKey, getTimeText, subtractHours, toDate } = require('../utils/dateUtils');
+const { buildStableId, limitText, normalizeText, normalizeTitle, stripHtml } = require('../utils/textUtils');
 
 const PRIORITY_KEYWORDS = {
   P0: [
@@ -47,6 +47,145 @@ const PRIORITY_KEYWORDS = {
   ],
 };
 
+const INVESTMENT_KEYWORDS = [
+  'A股',
+  '港股',
+  '美股',
+  '股市',
+  '沪指',
+  '恒指',
+  '纳指',
+  '标普',
+  '黄金',
+  '金价',
+  '原油',
+  '油价',
+  '美债',
+  '汇率',
+  '基金',
+  '债券',
+  'ETF',
+  '期货',
+  '央行',
+  '美联储',
+  '降息',
+  '加息',
+  'CPI',
+  '非农',
+  '通胀',
+  '财报',
+  'IPO',
+  '并购',
+];
+
+const INVESTMENT_CONTEXT_KEYWORDS = ['汇率', '兑', '走强', '走弱', '升值', '贬值', '指数', '离岸', '在岸'];
+const INVESTMENT_CURRENCY_KEYWORDS = ['美元', '人民币'];
+
+const CATEGORY_KEYWORD_RULES = [
+  {
+    category: '社会',
+    keywords: [
+      '民生',
+      '教育',
+      '学校',
+      '高校',
+      '中考',
+      '高考',
+      '医疗',
+      '医院',
+      '医生',
+      '医保',
+      '交通',
+      '地铁',
+      '高铁',
+      '铁路',
+      '航班',
+      '充电宝',
+      '食品安全',
+      '市场监管',
+      '消费维权',
+      '维权',
+      '事故',
+      '火灾',
+      '灾害',
+      '台风',
+      '暴雨',
+      '住房',
+      '养老',
+      '就业',
+      '社保',
+      '公共安全',
+      '警方',
+      '法院',
+      '检察',
+      '未成年人',
+    ],
+  },
+  {
+    category: '商业',
+    keywords: [
+      '公司',
+      '品牌',
+      '消费',
+      '零售',
+      '餐饮',
+      '电商',
+      '外卖',
+      '商业',
+      '供应链',
+      '融资',
+      '上市',
+      'IPO',
+      '并购',
+      '收购',
+      '财报',
+      '营收',
+      '利润',
+      '裁员',
+      '门店',
+      '车企',
+      '新能源车',
+      '物流',
+      '酒店',
+      '旅游',
+      '港交所',
+      '聆讯',
+    ],
+  },
+];
+
+function includesAnyKeyword(text, keywords = []) {
+  const normalizedText = String(text || '').toUpperCase();
+  return keywords.some((keyword) => normalizedText.includes(String(keyword).toUpperCase()));
+}
+
+function buildClassifyText(item = {}) {
+  return `${item.title || ''} ${item.rawSummary || ''}`;
+}
+
+function resolveCategory(item) {
+  const titleText = item.title || '';
+  const rule = CATEGORY_KEYWORD_RULES.find((entry) => includesAnyKeyword(titleText, entry.keywords));
+
+  return rule?.category || item.category;
+}
+
+function resolveTopics(item) {
+  const classifyText = buildClassifyText(item);
+  const titleText = item.title || '';
+  const topics = new Set(Array.isArray(item.topics) ? item.topics.filter((topic) => TOPIC_VALUES.includes(topic)) : []);
+  const hasInvestmentKeyword = includesAnyKeyword(classifyText, INVESTMENT_KEYWORDS);
+  const hasInvestmentCurrencyContext =
+    includesAnyKeyword(titleText, INVESTMENT_CURRENCY_KEYWORDS) ||
+    (includesAnyKeyword(classifyText, INVESTMENT_CURRENCY_KEYWORDS) && includesAnyKeyword(classifyText, INVESTMENT_CONTEXT_KEYWORDS));
+
+  if (hasInvestmentKeyword || hasInvestmentCurrencyContext) {
+    topics.add(INVESTMENT_TOPIC);
+  }
+
+  return [...topics];
+}
+
 function calcPriority(item) {
   const text = `${item.title}${item.rawSummary || ''}`;
 
@@ -85,26 +224,52 @@ function buildDisplayTime(publishedAt) {
   return getTimeText(publishedAt);
 }
 
-function normalizeItem(item, todayKey) {
+function buildOverview(item, cleanTitle) {
+  const rawText = normalizeText(item.rawSummary || '');
+  if (!rawText) return cleanTitle;
+  if (rawText.includes(cleanTitle) || cleanTitle.includes(rawText)) return limitText(rawText || cleanTitle, 300);
+
+  return limitText(`${cleanTitle}。${rawText}`, 300);
+}
+
+function parsePublishedAt(value) {
+  const publishedAt = new Date(value);
+  if (Number.isNaN(publishedAt.getTime())) return null;
+
+  return publishedAt;
+}
+
+function normalizeItem(item) {
   const priority = calcPriority(item);
   const cleanTitle = limitText(item.title, 80);
   const sourceUrl = item.sourceUrl || '';
-  const idHash = buildStableId([todayKey, item.category, item.source, sourceUrl, cleanTitle]);
+  const publishedAt = parsePublishedAt(item.publishedAt).toISOString();
+  const dateKey = getDateKey(publishedAt);
+  const category = resolveCategory(item);
+  const topics = resolveTopics(item);
+  const idHash = buildStableId([category, item.source, sourceUrl, cleanTitle]);
+  const overview = buildOverview(item, cleanTitle);
 
   return {
-    id: `${todayKey.replace(/-/g, '')}-${item.category}-${idHash}`,
+    id: `${dateKey.replace(/-/g, '')}-${category}-${idHash}`,
     title: cleanTitle,
-    category: item.category,
-    summary: limitText(item.rawSummary || cleanTitle, 80),
+    category,
+    topics,
+    overview,
     interpretation: '',
+    interpretationStatus: 'pending',
+    analysisType: '',
+    signals: [],
     source: item.source,
     sourceUrl,
-    publishedAt: toDate(item.publishedAt).toISOString(),
+    imageUrl: item.imageUrl || '',
+    imageAlt: item.imageAlt || cleanTitle,
+    publishedAt,
     priority,
     aiStatus: 'pending',
-    date: todayKey,
+    date: dateKey,
     time: buildDisplayTime(item.publishedAt),
-    rawSummary: limitText(stripHtml(item.rawSummary || cleanTitle), 220),
+    rawSummary: limitText(stripHtml(item.rawSummary || cleanTitle), 600),
   };
 }
 
@@ -127,22 +292,27 @@ function dedupeItems(items) {
 }
 
 function cleanNewsItems(rawItems, options = {}) {
-  const todayKey = options.todayKey || getDateKey();
   const maxPerCategory = options.maxPerCategory || env.maxNewsPerCategory;
+  const retentionHours = options.retentionHours || env.newsRetentionHours;
+  const windowEnd = toDate(options.now || new Date());
+  const windowStart = subtractHours(windowEnd, retentionHours);
 
-  const todayItems = rawItems.filter((item) => {
+  const windowItems = rawItems.filter((item) => {
     if (!CATEGORY_VALUES.includes(item.category)) return false;
-    return getDateKey(item.publishedAt) === todayKey;
+    const publishedAt = parsePublishedAt(item.publishedAt);
+    if (!publishedAt) return false;
+
+    return publishedAt >= windowStart && publishedAt <= windowEnd;
   });
 
-  const uniqueItems = dedupeItems(todayItems);
-  const normalizedItems = uniqueItems.map((item) => normalizeItem(item, todayKey)).sort(sortByPriorityAndTime);
+  const uniqueItems = dedupeItems(windowItems);
+  const normalizedItems = uniqueItems.map((item) => normalizeItem(item)).sort(sortByPriorityAndTime);
 
   const selectedItems = CATEGORY_VALUES.flatMap((category) =>
     normalizedItems.filter((item) => item.category === category).slice(0, maxPerCategory),
   ).sort(sortByPriorityAndTime);
 
-  console.log(`[清洗] 当天 ${todayItems.length} 条，去重后 ${uniqueItems.length} 条，保留 ${selectedItems.length} 条`);
+  console.log(`[清洗] 过去 ${retentionHours} 小时 ${windowItems.length} 条，去重后 ${uniqueItems.length} 条，保留 ${selectedItems.length} 条`);
   return selectedItems;
 }
 
@@ -153,6 +323,10 @@ function buildCounts(items) {
 
   for (const category of CATEGORY_VALUES) {
     counts[category] = items.filter((item) => item.category === category).length;
+  }
+
+  for (const topic of TOPIC_VALUES) {
+    counts[topic] = items.filter((item) => Array.isArray(item.topics) && item.topics.includes(topic)).length;
   }
 
   return counts;

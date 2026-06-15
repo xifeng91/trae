@@ -30,6 +30,10 @@ function limitText(text = '', maxLength = 80) {
   return normalized.slice(0, maxLength);
 }
 
+function normalizeText(text = '') {
+  return stripHtml(text).replace(/\s+/g, ' ').trim();
+}
+
 function buildStableId(parts) {
   const sourceText = parts.filter(Boolean).join('|');
   let hash = 0;
@@ -44,7 +48,9 @@ function buildStableId(parts) {
 
 module.exports = {
   buildStableId,
+  decodeEntities,
   limitText,
+  normalizeText,
   normalizeTitle,
   stripHtml,
 };

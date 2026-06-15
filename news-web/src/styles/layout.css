@@ -2,7 +2,6 @@
   width: min(var(--content-width), 100%);
   min-height: 100vh;
   margin: 0 auto;
-  padding: 8px 16px 38px;
 }
 
 .app-header {
@@ -118,13 +117,13 @@
 
 .content-shell {
   display: grid;
-  gap: 6px;
+  gap: 0;
 }
 
 .home-hero {
   display: grid;
   gap: 12px;
-  padding: 32px 0;
+  padding: 8px 8px 12px;
 }
 
 .home-hero h1 {
@@ -151,8 +150,7 @@
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
-  /* margin: 0 -16px; */
-  /* padding: 0 8px 4px; */
+  padding: 0 8px 4px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -167,7 +165,7 @@
   justify-content: center;
   gap: 6px;
   flex: 0 0 auto;
-  padding: 0 10px;
+  padding: 4px 8px;
   color: var(--text-secondary);
   background: rgba(255, 253, 251, 0.7);
   border: 1px solid transparent;
