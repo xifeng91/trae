@@ -1,6 +1,7 @@
 <script setup>
 import { X } from 'lucide-vue-next';
-import { onBeforeUnmount, watch } from 'vue';
+import { computed, onBeforeUnmount, watch } from 'vue';
+import { getRenderableImageUrl } from '../utils/images';
 
 const props = defineProps({
   alt: {
@@ -18,6 +19,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue']);
+const displaySrc = computed(() => getRenderableImageUrl(props.src));
 
 function closePreview() {
   emit('update:modelValue', false);
@@ -54,12 +56,12 @@ onBeforeUnmount(() => {
 <template>
   <Teleport to="body">
     <Transition name="image-preview-fade">
-      <div v-if="modelValue && src" class="image-preview" role="dialog" aria-modal="true" :aria-label="alt || '新闻图片预览'" @click.self="closePreview">
+      <div v-if="modelValue && displaySrc" class="image-preview" role="dialog" aria-modal="true" :aria-label="alt || '新闻图片预览'" @click.self="closePreview">
         <button class="image-preview-close" type="button" aria-label="关闭图片预览" @click="closePreview">
           <X :size="22" />
         </button>
         <figure class="image-preview-frame">
-          <img class="image-preview-img" :src="src" :alt="alt" decoding="async" referrerpolicy="no-referrer" />
+          <img class="image-preview-img" :src="displaySrc" :alt="alt" decoding="async" referrerpolicy="no-referrer" @error="closePreview" />
           <figcaption v-if="alt" class="image-preview-caption">{{ alt }}</figcaption>
         </figure>
       </div>

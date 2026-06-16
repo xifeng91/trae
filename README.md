@@ -335,6 +335,81 @@ http://ECS公网IP/
 http://ECS公网IP/api/health
 ```
 
+## 后续更新部署
+
+当前阿里云 ECS 已保留旧项目在 `80` 端口，今日简报部署在独立端口：
+
+```text
+原项目：http://39.96.38.149/
+本项目：西风简报：http://39.96.38.149:8080/
+```
+
+后续每次修改代码后，按以下步骤更新线上版本。
+
+### 1. 本地检查
+
+在本机项目根目录执行：
+
+```bash
+cd /Users/sunjiayi/Mine/work-study/repo/news-app
+pnpm --filter daily-news-api check
+pnpm --filter daily-news-web build
+```
+
+两条命令都成功后再上传。前端最终会在服务器重新构建，本地构建主要用于提前发现问题。
+
+### 2. 上传源码到服务器
+
+在本机项目根目录执行：
+
+```bash
+rsync -av \
+  --exclude ".git" \
+  --exclude "node_modules" \
+  --exclude "news-web/node_modules" \
+  --exclude "news-api/node_modules" \
+  --exclude "news-web/dist" \
+  --exclude "news-api/.env" \
+  --exclude "news-web/.env" \
+  /Users/sunjiayi/Mine/work-study/repo/news-app/ \
+  root@39.96.38.149:/opt/news-app/
+```
+
+不要上传或覆盖服务器上的 `.env`，真实密钥只保存在服务器。
+
+### 3. 服务器构建与重启
+
+登录服务器后执行：
+
+```bash
+cd /opt/news-app
+pnpm install
+pnpm --filter daily-news-api check
+pnpm --filter daily-news-web build
+rm -rf /var/www/news-web/*
+cp -r /opt/news-app/news-web/dist/* /var/www/news-web/
+pm2 restart news-api
+systemctl reload nginx
+```
+
+### 4. 更新后检查
+
+在服务器执行：
+
+```bash
+pm2 list
+curl http://127.0.0.1:3000/api/health
+curl http://127.0.0.1:8080/api/health
+```
+
+浏览器访问：
+
+```text
+http://39.96.38.149:8080/
+```
+
+如果页面能打开、新闻能加载、详情页 AI 解读可以流式输出，就说明本次更新完成。
+
 ## 验收清单
 
 - `pnpm check:api` 能通过。

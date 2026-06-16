@@ -12,6 +12,7 @@ import { useTheme } from '../composables/useTheme';
 import { formatNewsDateTime, getSourceHost, splitParagraphs } from '../utils/format';
 import { DETAIL_NEWS_PAGE_SIZE, findNewsItemById, getNewsDetailContent, normalizeNewsItem, normalizeNewsResponse } from '../utils/newsData';
 import { loadNewsCache, saveNewsCache } from '../utils/storage';
+import { getRenderableImageUrl } from '../utils/images';
 
 const route = useRoute();
 const router = useRouter();
@@ -41,11 +42,12 @@ const {
 const newsId = computed(() => String(route.params.id || ''));
 const displayDateTime = computed(() => formatNewsDateTime(news.value?.date, news.value?.time, news.value?.publishedAt));
 const sourceHost = computed(() => getSourceHost(news.value?.sourceUrl));
-const imageUrl = computed(() => String(news.value?.imageUrl || '').trim());
+const imageUrl = computed(() => getRenderableImageUrl(news.value?.imageUrl));
 const imageAlt = computed(() => news.value?.imageAlt || news.value?.title || '新闻图片');
 const detailParagraphs = computed(() => splitParagraphs(getNewsDetailContent(news.value)));
 const interpretationError = computed(() => interpretationEntry.value.error);
 const isWaitingForSharedInterpretation = computed(() => isGenerating.value && !isOwner.value);
+let autoScrollFrame = 0;
 
 function findNewsInCache(id) {
   return findNewsItemById(loadNewsCache(), id);
@@ -145,17 +147,45 @@ function updateAutoScrollState() {
   shouldFollowInterpretation.value = getDistanceToBottom() <= AUTO_SCROLL_THRESHOLD;
 }
 
-function scrollToPageBottom() {
-  window.scrollTo({
-    top: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
-    behavior: 'smooth',
+function stopFollowingForUserGesture() {
+  if (!isGenerating.value) return;
+  shouldFollowInterpretation.value = false;
+}
+
+function handleWindowScroll() {
+  if (!isGenerating.value) return;
+  updateAutoScrollState();
+}
+
+function scheduleScrollToPageBottom() {
+  if (autoScrollFrame) return;
+
+  autoScrollFrame = window.requestAnimationFrame(() => {
+    autoScrollFrame = 0;
+    window.scrollTo({
+      top: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
+      behavior: 'auto',
+    });
   });
 }
 
-onMounted(loadDetailNews);
+onMounted(() => {
+  window.addEventListener('scroll', handleWindowScroll, { passive: true });
+  window.addEventListener('touchstart', stopFollowingForUserGesture, { passive: true });
+  window.addEventListener('wheel', stopFollowingForUserGesture, { passive: true });
+  loadDetailNews();
+});
 
 onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleWindowScroll);
+  window.removeEventListener('touchstart', stopFollowingForUserGesture);
+  window.removeEventListener('wheel', stopFollowingForUserGesture);
   window.clearTimeout(toastTimer);
+
+  if (autoScrollFrame) {
+    window.cancelAnimationFrame(autoScrollFrame);
+    autoScrollFrame = 0;
+  }
 });
 
 watch(newsId, loadDetailNews);
@@ -179,11 +209,10 @@ watch(isGenerating, (generating) => {
 watch(interpretationText, async () => {
   if (!isGenerating.value) return;
 
-  updateAutoScrollState();
   if (!shouldFollowInterpretation.value) return;
 
   await nextTick();
-  scrollToPageBottom();
+  scheduleScrollToPageBottom();
 });
 </script>
 

@@ -1,4 +1,5 @@
 import { CATEGORY_OPTIONS } from './categories';
+import { getRenderableImageUrl } from './images';
 
 export const DEFAULT_NEWS_PAGE_SIZE = 8;
 export const DETAIL_NEWS_PAGE_SIZE = 24;
@@ -33,7 +34,7 @@ export function normalizeNewsItem(item = {}) {
   return {
     ...item,
     overview: item.overview || item.summary || item.shortSummary || item.rawSummary || item.title || '',
-    imageUrl: item.imageUrl || '',
+    imageUrl: getRenderableImageUrl(item.imageUrl),
     imageAlt: item.imageAlt || item.title || '',
     topics: Array.isArray(item.topics) ? item.topics : [],
     interpretation: item.interpretation || '',

@@ -41,10 +41,6 @@ const hasNews = computed(() => {
   const total = newsData.value?.counts?.total ?? items.length;
   return total > 0;
 });
-const loadMoreText = computed(() => {
-  if (isLoadingMore.value) return '正在加载更多新闻';
-  return '加载更多新闻';
-});
 
 function showToast(message) {
   toastMessage.value = message;
@@ -169,9 +165,12 @@ onBeforeUnmount(() => {
         />
         <NewsList :items="filteredNews" />
         <div v-if="filteredNews.length > 0" class="load-more-row" aria-live="polite">
-          <button v-if="hasNextPage || isLoadingMore" class="load-more-button" type="button" :disabled="isLoadingMore" @click="handleLoadMore">
-            <LoaderCircle v-if="isLoadingMore" class="spinning" :size="16" />
-            <span>{{ loadMoreText }}</span>
+          <div v-if="isLoadingMore" class="load-more-status" role="status">
+            <LoaderCircle class="spinning" :size="16" />
+            <span>正在加载更多新闻</span>
+          </div>
+          <button v-else-if="hasNextPage" class="load-more-button" type="button" @click="handleLoadMore">
+            <span>加载更多新闻</span>
           </button>
           <p v-else class="min-h-11 py-3 text-center text-xs font-semibold text-[#A4A9BC]">
             - 已加载近 24 小时全部新闻 -

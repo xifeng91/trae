@@ -1,6 +1,7 @@
 @media (min-width: 768px) {
   :root {
     --header-height: 76px;
+    --top-nav-offset: max(60px, calc(52px + env(safe-area-inset-top)));
   }
 
   .app-header {
@@ -117,10 +118,6 @@
     padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 6px max(8px, env(safe-area-inset-left));
   }
 
-  .app-top-bar-secondary {
-    grid-template-columns: 88px minmax(0, 1fr) 88px;
-  }
-
   .app-brand {
     font-size: 1.6rem;
   }
@@ -138,10 +135,6 @@
 
   .category-sheet {
     border-radius: 20px;
-  }
-
-  .category-grid {
-    grid-template-columns: 1fr;
   }
 
 }

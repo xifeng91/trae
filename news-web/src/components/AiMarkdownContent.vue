@@ -2,6 +2,7 @@
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { computed } from 'vue';
+import { getRenderableImageUrl } from '../utils/images';
 
 marked.use({
   gfm: true,
@@ -75,11 +76,13 @@ function normalizeRenderedHtml(html = '') {
   template.content.querySelectorAll('img[src]').forEach((image) => {
     const src = image.getAttribute('src') || '';
 
-    if (!isSafeRemoteUrl(src)) {
+    const renderableSrc = getRenderableImageUrl(src);
+    if (!isSafeRemoteUrl(src) || !renderableSrc) {
       image.remove();
       return;
     }
 
+    image.setAttribute('src', renderableSrc);
     image.setAttribute('loading', 'lazy');
     if (!image.getAttribute('alt')) image.setAttribute('alt', 'AI 解读配图');
   });

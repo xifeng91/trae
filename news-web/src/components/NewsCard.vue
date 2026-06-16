@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import { CATEGORY_META } from '../utils/categories';
 import { formatNewsDateTime } from '../utils/format';
 import ImagePreview from './ImagePreview.vue';
+import { getRenderableImageUrl } from '../utils/images';
 
 const props = defineProps({
   news: {
@@ -18,7 +19,7 @@ const isPreviewOpen = ref(false);
 const categoryColor = computed(() => CATEGORY_META[props.news.category]?.color || '#64748b');
 const displayDateTime = computed(() => formatNewsDateTime(props.news.date, props.news.time, props.news.publishedAt));
 const overviewText = computed(() => props.news.overview || props.news.summary || props.news.shortSummary || '暂无内容总览');
-const imageUrl = computed(() => String(props.news.imageUrl || '').trim());
+const imageUrl = computed(() => getRenderableImageUrl(props.news.imageUrl));
 const imageAlt = computed(() => props.news.imageAlt || props.news.title || '新闻图片');
 const isImageVisible = ref(Boolean(imageUrl.value));
 

@@ -25,6 +25,8 @@
   --radius-md: 8px;
   --content-width: 760px;
   --header-height: 68px;
+  --top-nav-offset: max(58px, calc(51px + env(safe-area-inset-top)));
+  --top-nav-content-gap: 10px;
   --font-brand: "Zhi Mang Xing Local", "STKaiti", "KaiTi", cursive;
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }

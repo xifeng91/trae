@@ -1,6 +1,6 @@
 <script setup>
-import { ArrowLeft, ListFilter, Moon, RefreshCw, Search, Sun, X } from 'lucide-vue-next';
-import { onBeforeUnmount, watch } from 'vue';
+import { ArrowLeft, ListFilter, LoaderCircle, Moon, RefreshCw, Search, Sun, X } from 'lucide-vue-next';
+import { computed, onBeforeUnmount, watch } from 'vue';
 import CategoryTabs from './CategoryTabs.vue';
 
 const props = defineProps({
@@ -20,6 +20,22 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  activeFilter: {
+    type: String,
+    default: '',
+  },
+  filterOptions: {
+    type: Array,
+    default: () => [],
+  },
+  filterTitle: {
+    type: String,
+    default: '筛选',
+  },
+  isFilterPanelOpen: {
+    type: Boolean,
+    default: false,
+  },
   isRefreshing: {
     type: Boolean,
     default: false,
@@ -36,16 +52,44 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  showSearch: {
+    type: Boolean,
+    default: true,
+  },
 });
 
-const emit = defineEmits(['update:activeCategory', 'update:isCategoryPanelOpen', 'back', 'refresh', 'search', 'toggle-theme']);
+const emit = defineEmits([
+  'update:activeCategory',
+  'update:isCategoryPanelOpen',
+  'update:activeFilter',
+  'update:isFilterPanelOpen',
+  'back',
+  'refresh',
+  'search',
+  'toggle-theme',
+]);
+
+const hasFilterOptions = computed(() => props.filterOptions.length > 0);
 
 function closeCategoryPanel() {
   emit('update:isCategoryPanelOpen', false);
 }
 
+function closeFilterPanel() {
+  emit('update:isFilterPanelOpen', false);
+}
+
+function closePanels() {
+  closeCategoryPanel();
+  closeFilterPanel();
+}
+
 function openCategoryPanel() {
   emit('update:isCategoryPanelOpen', true);
+}
+
+function openFilterPanel() {
+  emit('update:isFilterPanelOpen', true);
 }
 
 function selectCategory(category) {
@@ -53,8 +97,13 @@ function selectCategory(category) {
   closeCategoryPanel();
 }
 
+function selectFilter(filter) {
+  emit('update:activeFilter', filter);
+  closeFilterPanel();
+}
+
 function handleKeydown(event) {
-  if (event.key === 'Escape') closeCategoryPanel();
+  if (event.key === 'Escape') closePanels();
 }
 
 function lockBodyScroll(locked) {
@@ -62,7 +111,7 @@ function lockBodyScroll(locked) {
 }
 
 watch(
-  () => props.isCategoryPanelOpen,
+  () => props.isCategoryPanelOpen || props.isFilterPanelOpen,
   (visible) => {
     if (visible) {
       window.addEventListener('keydown', handleKeydown);
@@ -90,10 +139,10 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <h1 class="app-brand app-brand-centered">西风简报</h1>
+        <div class="app-nav-spacer" aria-hidden="true"></div>
 
         <div class="app-nav-side app-nav-side-right" aria-label="页面操作">
-          <button class="nav-icon-button" type="button" aria-label="搜索新闻" title="搜索" @click="emit('search')">
+          <button v-if="showSearch" class="nav-icon-button" type="button" aria-label="搜索新闻" title="搜索" @click="emit('search')">
             <Search :size="19" />
           </button>
           <button
@@ -105,6 +154,16 @@ onBeforeUnmount(() => {
           >
             <Sun v-if="isDarkMode" :size="19" />
             <Moon v-else :size="19" />
+          </button>
+          <button
+            v-if="hasFilterOptions"
+            class="nav-icon-button"
+            type="button"
+            :aria-label="filterTitle"
+            :title="filterTitle"
+            @click="openFilterPanel"
+          >
+            <ListFilter :size="19" />
           </button>
         </div>
       </template>
@@ -132,16 +191,19 @@ onBeforeUnmount(() => {
             <Moon v-else :size="19" />
           </button>
           <button
-            v-if="showRefresh"
+            v-if="showRefresh && !isRefreshing"
             class="nav-icon-button"
             type="button"
-            :disabled="isRefreshing"
-            :aria-label="isRefreshing ? '正在刷新新闻' : '刷新新闻'"
-            :title="isRefreshing ? '正在刷新' : '刷新'"
+            aria-label="刷新新闻"
+            title="刷新"
             @click="emit('refresh')"
           >
-            <RefreshCw :size="19" :class="{ spinning: isRefreshing }" />
+            <RefreshCw :size="19" />
           </button>
+          <div v-else-if="showRefresh" class="nav-refresh-status" role="status" aria-live="polite" aria-label="正在刷新新闻">
+            <LoaderCircle class="spinning" :size="16" />
+            <span>刷新中</span>
+          </div>
           <button class="nav-icon-button" type="button" aria-label="搜索新闻" title="搜索" @click="emit('search')">
             <Search :size="19" />
           </button>
@@ -171,6 +233,31 @@ onBeforeUnmount(() => {
                 </button>
               </header>
               <CategoryTabs variant="grid" :model-value="activeCategory" :counts="counts" @update:model-value="selectCategory" />
+            </section>
+          </Transition>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <Teleport to="body">
+      <Transition name="category-sheet-fade">
+        <div v-if="hasFilterOptions && isFilterPanelOpen" class="category-sheet-backdrop" role="presentation" @click.self="closeFilterPanel">
+          <Transition name="category-sheet-slide" appear>
+            <section class="category-sheet glass-panel" role="dialog" aria-modal="true" aria-labelledby="filter-sheet-title">
+              <header class="category-sheet-header">
+                <h2 id="filter-sheet-title">{{ filterTitle }}</h2>
+                <button class="nav-icon-button" type="button" :aria-label="`关闭${filterTitle}`" @click="closeFilterPanel">
+                  <X :size="19" />
+                </button>
+              </header>
+              <CategoryTabs
+                variant="grid"
+                :model-value="activeFilter"
+                :options="filterOptions"
+                :show-counts="false"
+                :aria-label="filterTitle"
+                @update:model-value="selectFilter"
+              />
             </section>
           </Transition>
         </div>

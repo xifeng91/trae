@@ -1,6 +1,8 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import Home from '../views/Home.vue';
 
+const APP_TITLE = '西风简报-24H新闻AI解读';
+
 const routes = [
   {
     path: '/',
@@ -42,7 +44,7 @@ const router = createRouter({
 });
 
 router.afterEach((to) => {
-  document.title = to.meta?.title ? `${to.meta.title} - AI 新闻工作台` : '今日简报';
+  document.title = to.name === 'home' || !to.meta?.title ? APP_TITLE : `${to.meta.title} - ${APP_TITLE}`;
 });
 
 export default router;

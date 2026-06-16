@@ -16,6 +16,7 @@ const HISTORY_FILTERS = [
 const router = useRouter();
 const { isDarkMode, toggleTheme } = useTheme();
 const activeBucket = ref('today');
+const isFilterPanelOpen = ref(false);
 const historyData = ref(null);
 const isLoading = ref(false);
 const errorMessage = ref('');
@@ -53,10 +54,6 @@ function goBack() {
   router.push({ name: 'search' });
 }
 
-function handleSearch() {
-  router.push({ name: 'search' });
-}
-
 watch(activeBucket, loadHistory);
 
 onMounted(loadHistory);
@@ -64,23 +61,20 @@ onMounted(loadHistory);
 
 <template>
   <main class="home-page">
-    <AppTopNav :is-dark-mode="isDarkMode" show-back :show-refresh="false" @back="goBack" @search="handleSearch" @toggle-theme="toggleTheme" />
+    <AppTopNav
+      v-model:active-filter="activeBucket"
+      v-model:is-filter-panel-open="isFilterPanelOpen"
+      :filter-options="HISTORY_FILTERS"
+      :is-dark-mode="isDarkMode"
+      filter-title="筛选历史"
+      show-back
+      :show-refresh="false"
+      :show-search="false"
+      @back="goBack"
+      @toggle-theme="toggleTheme"
+    />
 
     <section class="grid gap-3 px-3 py-3 md:px-0 md:py-4">
-      <div class="history-filter-bar" aria-label="搜索历史筛选">
-        <button
-          v-for="filter in HISTORY_FILTERS"
-          :key="filter.value"
-          class="history-filter-button"
-          :class="{ active: activeBucket === filter.value }"
-          type="button"
-          :aria-pressed="activeBucket === filter.value"
-          @click="activeBucket = filter.value"
-        >
-          {{ filter.label }}
-        </button>
-      </div>
-
       <section v-if="isLoading" class="loading-view !min-h-[240px]">
         <LoaderCircle class="spinning" :size="28" />
         <span>正在加载历史</span>
