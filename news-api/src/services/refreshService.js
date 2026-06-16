@@ -4,6 +4,7 @@ const { addMinutes, getDateTimeText, toDate } = require('../utils/dateUtils');
 const { fetchAllNews } = require('./newsFetchService');
 const { cleanNewsItems } = require('./newsCleanService');
 const { findNewsItemById, loadTodayData, saveTodayData, updateNewsItem } = require('./newsStoreService');
+const { findCachedSearchItemById, updateCachedSearchItem } = require('./searchCacheService');
 const { streamAiInterpretation } = require('./aiNewsService');
 
 let runningPromise = null;
@@ -54,6 +55,31 @@ function sanitizeNewsItem(item) {
     ...publicItem,
     interpretationStatus: item.interpretation ? 'success' : item.interpretationStatus || item.aiStatus || 'pending',
   };
+}
+
+function findNewsItemAcrossStores(newsId) {
+  const localItem = findNewsItemById(newsId);
+  if (localItem) {
+    return {
+      item: localItem,
+      store: 'local',
+    };
+  }
+
+  const cachedSearchItem = findCachedSearchItemById(newsId);
+  if (cachedSearchItem) {
+    return {
+      item: cachedSearchItem,
+      store: 'search',
+    };
+  }
+
+  return null;
+}
+
+function updateNewsItemAcrossStores(newsId, patch = {}, store = 'local') {
+  if (store === 'search') return updateCachedSearchItem(newsId, patch);
+  return updateNewsItem(newsId, patch);
 }
 
 function isReusableInterpretation(item = {}) {
@@ -217,23 +243,36 @@ function getNewsPage(query = {}) {
   };
 }
 
+function getNewsDetail(newsId) {
+  const found = findNewsItemAcrossStores(newsId);
+  if (!found) return null;
+
+  return {
+    ...sanitizeNewsItem(found.item),
+    origin: found.item.origin || (found.store === 'search' ? 'web' : 'local'),
+    originLabel: found.item.originLabel || (found.store === 'search' ? '联网补充' : '本地已收录'),
+  };
+}
+
 function getCachedInterpretation(newsId, options = {}) {
-  const item = findNewsItemById(newsId);
-  if (!item) return null;
-  if (!isReusableInterpretation(item) || options.force) return {
-    item,
+  const found = findNewsItemAcrossStores(newsId);
+  if (!found) return null;
+  if (!isReusableInterpretation(found.item) || options.force) return {
+    item: found.item,
+    store: found.store,
     cached: false,
   };
 
   return {
-    item,
+    item: found.item,
+    store: found.store,
     cached: true,
     result: {
-      interpretation: item.interpretation,
-      interpretationStatus: item.interpretationStatus || item.aiStatus || 'success',
-      aiStatus: item.aiStatus || item.interpretationStatus || 'success',
-      analysisType: item.analysisType || '',
-      signals: item.signals || [],
+      interpretation: found.item.interpretation,
+      interpretationStatus: found.item.interpretationStatus || found.item.aiStatus || 'success',
+      aiStatus: found.item.aiStatus || found.item.interpretationStatus || 'success',
+      analysisType: found.item.analysisType || '',
+      signals: found.item.signals || [],
     },
   };
 }
@@ -263,10 +302,14 @@ async function streamNewsInterpretation(newsId, handlers = {}, options = {}) {
     throw error;
   }
 
-  updateNewsItem(newsId, {
-    interpretationStatus: 'generating',
-    aiStatus: 'generating',
-  });
+  updateNewsItemAcrossStores(
+    newsId,
+    {
+      interpretationStatus: 'generating',
+      aiStatus: 'generating',
+    },
+    cached.store,
+  );
 
   handlers.onMeta?.({
     status: 'generating',
@@ -280,15 +323,19 @@ async function streamNewsInterpretation(newsId, handlers = {}, options = {}) {
   try {
     const result = await promise;
     if (result.interpretationStatus === 'success' || result.aiStatus === 'success') {
-      updateNewsItem(newsId, result);
+      updateNewsItemAcrossStores(newsId, result, cached.store);
     } else {
-      updateNewsItem(newsId, {
-        interpretation: '',
-        interpretationStatus: 'pending',
-        aiStatus: 'pending',
-        analysisType: result.analysisType || '',
-        signals: result.signals || [],
-      });
+      updateNewsItemAcrossStores(
+        newsId,
+        {
+          interpretation: '',
+          interpretationStatus: 'pending',
+          aiStatus: 'pending',
+          analysisType: result.analysisType || '',
+          signals: result.signals || [],
+        },
+        cached.store,
+      );
     }
     handlers.onDone?.(result);
     return result;
@@ -298,6 +345,7 @@ async function streamNewsInterpretation(newsId, handlers = {}, options = {}) {
 }
 
 module.exports = {
+  getNewsDetail,
   getNewsPage,
   getRefreshStatus,
   streamNewsInterpretation,

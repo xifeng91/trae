@@ -11,6 +11,11 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  variant: {
+    type: String,
+    default: 'tabs',
+    validator: (value) => ['tabs', 'grid'].includes(value),
+  },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -24,7 +29,7 @@ const categoriesWithCounts = computed(() =>
 </script>
 
 <template>
-  <nav class="category-tabs" aria-label="新闻分类">
+  <nav :class="variant === 'grid' ? 'category-grid' : 'category-tabs'" aria-label="新闻分类">
     <button
       v-for="category in categoriesWithCounts"
       :key="category.value"

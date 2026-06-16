@@ -2,6 +2,7 @@ const express = require('express');
 const healthRoutes = require('./routes/healthRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const refreshRoutes = require('./routes/refreshRoutes');
+const searchRoutes = require('./routes/searchRoutes');
 
 function createApp() {
   const app = express();
@@ -23,6 +24,7 @@ function createApp() {
   app.use('/api', healthRoutes);
   app.use('/api', newsRoutes);
   app.use('/api', refreshRoutes);
+  app.use('/api', searchRoutes);
 
   app.use((req, res) => {
     res.status(404).json({

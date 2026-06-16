@@ -1,6 +1,6 @@
 const express = require('express');
 const { ALL_CATEGORY, QUERY_CATEGORY_VALUES } = require('../constants/categories');
-const { getNewsPage, streamNewsInterpretation, triggerRefreshIfNeeded } = require('../services/refreshService');
+const { getNewsDetail, getNewsPage, streamNewsInterpretation, triggerRefreshIfNeeded } = require('../services/refreshService');
 
 const router = express.Router();
 
@@ -22,6 +22,18 @@ router.get('/news', (req, res) => {
   });
 
   return res.status(payload.items.length > 0 ? 200 : 202).json(payload);
+});
+
+router.get('/news/:id', (req, res) => {
+  const item = getNewsDetail(req.params.id);
+
+  if (!item) {
+    return res.status(404).json({
+      message: '新闻不存在或已过期',
+    });
+  }
+
+  return res.json(item);
 });
 
 function writeSseEvent(res, eventName, data) {

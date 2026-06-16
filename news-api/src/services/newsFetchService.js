@@ -17,7 +17,7 @@ const BLOCKED_IMAGE_PATTERNS = [
 ];
 
 const parser = new Parser({
-  timeout: 20000,
+  timeout: env.newsFetchTimeoutMs,
   headers: {
     'User-Agent': 'Mozilla/5.0 (compatible; DailyNewsBriefing/1.0)',
     Accept: 'application/rss+xml, application/xml, text/xml, */*',

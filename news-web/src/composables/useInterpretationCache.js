@@ -21,12 +21,15 @@ function parseEventPayload(event) {
 }
 
 function createEntry(news = {}) {
+  const interpretation = String(news.interpretation || '').trim();
+  const status = interpretation ? 'success' : news.interpretationStatus || 'pending';
+
   return reactive({
     id: news.id || '',
-    status: news.interpretationStatus || 'pending',
-    displayText: '',
-    fullText: '',
-    rawText: '',
+    status,
+    displayText: interpretation,
+    fullText: interpretation,
+    rawText: interpretation,
     error: '',
     ownerKey: '',
     eventSource: null,
@@ -47,6 +50,14 @@ export function getInterpretationEntry(news = {}) {
   }
 
   const entry = entries.get(newsId);
+  const interpretation = String(news.interpretation || '').trim();
+  if (interpretation && (!entry.fullText || entry.status !== 'success')) {
+    entry.displayText = interpretation;
+    entry.fullText = interpretation;
+    entry.rawText = interpretation;
+    entry.status = 'success';
+  }
+
   if (!entry.status || entry.status === 'pending') {
     entry.status = news.interpretationStatus || entry.status || 'pending';
   }

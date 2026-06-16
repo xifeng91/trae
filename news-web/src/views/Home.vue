@@ -1,11 +1,12 @@
 <script setup>
-import { ArrowUp, LoaderCircle, Moon, RefreshCw, Sun } from 'lucide-vue-next';
+import { ArrowUp, LoaderCircle, RefreshCw } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import CategoryTabs from '../components/CategoryTabs.vue';
+import { useRouter } from 'vue-router';
+import AppTopNav from '../components/AppTopNav.vue';
 import NewsList from '../components/NewsList.vue';
 import ToastMessage from '../components/ToastMessage.vue';
 import { useNews } from '../composables/useNews';
-import { loadThemePreference, saveThemePreference } from '../utils/storage';
+import { useTheme } from '../composables/useTheme';
 
 const AUTO_LOAD_BOTTOM_OFFSET = 280;
 const BACK_TO_TOP_THRESHOLD_SCREENS = 2;
@@ -26,8 +27,10 @@ const {
   triggerRefresh,
 } = useNews();
 
+const { isDarkMode, toggleTheme } = useTheme();
+const router = useRouter();
 const toastMessage = ref('');
-const isDarkMode = ref(resolveInitialTheme());
+const isCategoryPanelOpen = ref(false);
 const showBackToTop = ref(false);
 let toastTimer = null;
 let isPageActive = false;
@@ -63,8 +66,8 @@ async function handleLoadMore() {
   if (!success) showToast(errorMessage.value || '加载更多失败');
 }
 
-function toggleTheme() {
-  isDarkMode.value = !isDarkMode.value;
+function handleSearch() {
+  router.push({ name: 'search' });
 }
 
 function scrollToTop() {
@@ -106,13 +109,6 @@ function handleWindowResize() {
   updateScrollState();
 }
 
-function resolveInitialTheme() {
-  const savedTheme = loadThemePreference();
-  if (savedTheme === 'dark' || savedTheme === 'light') return savedTheme === 'dark';
-
-  return false;
-}
-
 onMounted(async () => {
   isPageActive = true;
   window.addEventListener('scroll', handleWindowScroll, { passive: true });
@@ -140,14 +136,6 @@ onBeforeUnmount(() => {
   }
 });
 
-watch(
-  isDarkMode,
-  (value) => {
-    document.documentElement.classList.toggle('dark', value);
-    saveThemePreference(value ? 'dark' : 'light');
-  },
-  { immediate: true },
-);
 </script>
 
 <template>
@@ -168,10 +156,17 @@ watch(
 
     <template v-else>
       <section class="content-shell">
-        <header class="home-hero" aria-labelledby="home-title">
-          <h1 id="home-title" class="text-center">西风简报</h1>
-        </header>
-        <CategoryTabs v-model="activeCategory" :counts="stats" />
+        <AppTopNav
+          v-model:active-category="activeCategory"
+          v-model:is-category-panel-open="isCategoryPanelOpen"
+          :counts="stats"
+          :is-dark-mode="isDarkMode"
+          :is-refreshing="isRefreshing"
+          show-categories
+          @refresh="handleRefresh"
+          @search="handleSearch"
+          @toggle-theme="toggleTheme"
+        />
         <NewsList :items="filteredNews" />
         <div v-if="filteredNews.length > 0" class="load-more-row" aria-live="polite">
           <button v-if="hasNextPage || isLoadingMore" class="load-more-button" type="button" :disabled="isLoadingMore" @click="handleLoadMore">
@@ -190,7 +185,7 @@ watch(
       aria-label="页面操作"
     >
       <button
-        class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white/78 p-0 text-[var(--accent)] shadow-[0_14px_36px_rgba(15,23,42,0.18)] backdrop-blur-[8px] transition duration-200 hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] focus-visible:bg-[var(--accent-soft)] focus-visible:text-[var(--accent-strong)] focus-visible:outline-none active:translate-y-px dark:bg-[#1e1e1e]/72 dark:shadow-[0_18px_42px_rgba(0,0,0,0.34)]"
+        class="glass-icon-button"
         type="button"
         aria-label="回到顶部"
         title="回到顶部"
@@ -202,32 +197,6 @@ watch(
         <ArrowUp :size="19" />
         <span class="sr-only">回到顶部</span>
       </button>
-      <div
-        class="inline-grid gap-1 rounded-full bg-white/72 p-1 shadow-[0_14px_36px_rgba(15,23,42,0.18)] backdrop-blur-[8px] dark:bg-[#1e1e1e]/68 dark:shadow-[0_18px_42px_rgba(0,0,0,0.34)]"
-      >
-        <button
-          class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-transparent p-0 text-[var(--accent)] transition duration-200 hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] focus-visible:bg-[var(--accent-soft)] focus-visible:text-[var(--accent-strong)] focus-visible:outline-none active:translate-y-px"
-          type="button"
-          :disabled="isRefreshing"
-          :aria-label="isRefreshing ? '正在刷新新闻' : '刷新新闻'"
-          :title="isRefreshing ? '正在刷新' : '刷新'"
-          @click="handleRefresh"
-        >
-          <RefreshCw :size="18" :class="{ spinning: isRefreshing }" />
-          <span class="sr-only">{{ isRefreshing ? '刷新中' : '刷新' }}</span>
-        </button>
-        <button
-          class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-transparent p-0 text-[var(--accent)] transition duration-200 hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] focus-visible:bg-[var(--accent-soft)] focus-visible:text-[var(--accent-strong)] focus-visible:outline-none active:translate-y-px"
-          type="button"
-          :aria-label="isDarkMode ? '切换为亮色主题' : '切换为暗色主题'"
-          :title="isDarkMode ? '亮色主题' : '暗色主题'"
-          @click="toggleTheme"
-        >
-          <Sun v-if="isDarkMode" :size="19" />
-          <Moon v-else :size="19" />
-          <span class="sr-only">{{ isDarkMode ? '亮色主题' : '暗色主题' }}</span>
-        </button>
-      </div>
     </div>
 
     <ToastMessage :message="toastMessage" />

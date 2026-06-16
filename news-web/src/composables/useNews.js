@@ -1,36 +1,11 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { fetchNews, refreshNews } from '../api/newsApi';
 import { CATEGORY_OPTIONS } from '../utils/categories';
+import { DEFAULT_NEWS_PAGE_SIZE, normalizeNewsResponse, sortNewsByDateTime } from '../utils/newsData';
 import { loadNewsCache, saveNewsCache } from '../utils/storage';
 
 const POLL_INTERVAL = 60 * 1000;
-const PAGE_SIZE = 8;
-
-function getNewsTimestamp(item) {
-  if (item?.publishedAt) {
-    const publishedTimestamp = new Date(item.publishedAt).getTime();
-    if (!Number.isNaN(publishedTimestamp)) return publishedTimestamp;
-  }
-
-  const dateText = item?.date || '';
-  const timeText = item?.time || '';
-  const normalizedTime = /^\d{1,2}:\d{2}$/.test(timeText) ? timeText : '00:00';
-  const date = dateText ? new Date(`${dateText}T${normalizedTime}:00`) : new Date(timeText);
-  const timestamp = date.getTime();
-
-  return Number.isNaN(timestamp) ? 0 : timestamp;
-}
-
-function sortNewsByDateTime(newsItems) {
-  return newsItems
-    .map((item, index) => ({
-      item,
-      index,
-      timestamp: getNewsTimestamp(item),
-    }))
-    .sort((current, next) => next.timestamp - current.timestamp || current.index - next.index)
-    .map(({ item }) => item);
-}
+const PAGE_SIZE = DEFAULT_NEWS_PAGE_SIZE;
 
 function buildStats(newsItems) {
   const stats = {
@@ -45,41 +20,6 @@ function buildStats(newsItems) {
   });
 
   return stats;
-}
-
-function normalizeNewsItem(item = {}) {
-  return {
-    ...item,
-    overview: item.overview || item.summary || item.shortSummary || item.rawSummary || item.title || '',
-    imageUrl: item.imageUrl || '',
-    imageAlt: item.imageAlt || item.title || '',
-    topics: Array.isArray(item.topics) ? item.topics : [],
-    interpretation: '',
-    interpretationStatus: item.interpretationStatus || item.aiStatus || 'pending',
-    signals: Array.isArray(item.signals) ? item.signals : [],
-  };
-}
-
-function normalizeNewsResponse(data) {
-  const items = data?.items || data?.news || [];
-
-  return {
-    date: data?.date || '',
-    updatedAt: data?.updatedAt || null,
-    retentionHours: data?.retentionHours || 24,
-    windowStartAt: data?.windowStartAt || '',
-    windowEndAt: data?.windowEndAt || '',
-    isRefreshing: Boolean(data?.isRefreshing),
-    categories: data?.categories || CATEGORY_OPTIONS.filter((item) => item.value !== '全部').map((item) => item.value),
-    counts: data?.counts || null,
-    pagination: data?.pagination || {
-      page: 1,
-      pageSize: PAGE_SIZE,
-      total: items.length,
-    },
-    items: items.map(normalizeNewsItem),
-    message: data?.message || '',
-  };
 }
 
 export function useNews() {

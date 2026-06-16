@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Zhi Mang Xing Local";
+  src: url("../assets/fonts/ZhiMangXing-Regular-minified.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
 :root {
   color-scheme: light;
   --page-bg: #f7f5f2;
@@ -17,6 +25,7 @@
   --radius-md: 8px;
   --content-width: 760px;
   --header-height: 68px;
+  --font-brand: "Zhi Mang Xing Local", "STKaiti", "KaiTi", cursive;
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
