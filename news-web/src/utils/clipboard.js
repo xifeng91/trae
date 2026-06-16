@@ -3,23 +3,24 @@ import { formatDisplayDate } from './format';
 
 export function buildBriefingText(data) {
   const dateText = formatDisplayDate(data?.date);
-  const lines = [`今日简报 | ${dateText}`, '='.repeat(30), ''];
+  const newsItems = data?.items || data?.news || [];
+  const lines = [`近 24 小时简报 | ${dateText}`, '='.repeat(30), ''];
 
   CATEGORY_OPTIONS.filter((item) => item.value !== '全部').forEach((category) => {
-    const items = data.news.filter((news) => news.category === category.value);
+    const items = newsItems.filter((news) => news.category === category.value);
     if (items.length === 0) return;
 
     lines.push(`【${category.label}新闻】`, '');
     items.forEach((news) => {
       lines.push(`${news.title}`);
-      lines.push(`摘要：${news.shortSummary || news.summary || '暂无摘要'}`);
+      lines.push(`总览：${news.overview || news.summary || news.shortSummary || '暂无总览'}`);
       lines.push(`解读：${news.interpretation || '暂无解读'}`);
       if (news.sourceUrl) lines.push(`来源：${news.sourceUrl}`);
       lines.push('');
     });
   });
 
-  lines.push('='.repeat(30), '一键生成，快速掌握今日世界要点。');
+  lines.push('='.repeat(30), '一键生成，快速掌握近 24 小时世界要点。');
   return lines.join('\n');
 }
 

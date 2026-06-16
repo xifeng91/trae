@@ -1,5 +1,8 @@
-const CATEGORY_VALUES = ['国内', '国际', '财经', '科技'];
 const ALL_CATEGORY = '全部';
+const INVESTMENT_TOPIC = '投资';
+const CATEGORY_VALUES = ['国内', '国际', '财经', '科技', '社会', '商业'];
+const TOPIC_VALUES = [INVESTMENT_TOPIC];
+const QUERY_CATEGORY_VALUES = [...CATEGORY_VALUES, ...TOPIC_VALUES];
 
 const PRIORITY_ORDER = {
   P0: 0,
@@ -10,5 +13,8 @@ const PRIORITY_ORDER = {
 module.exports = {
   ALL_CATEGORY,
   CATEGORY_VALUES,
+  INVESTMENT_TOPIC,
   PRIORITY_ORDER,
+  QUERY_CATEGORY_VALUES,
+  TOPIC_VALUES,
 };

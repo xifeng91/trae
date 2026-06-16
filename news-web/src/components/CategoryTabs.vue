@@ -9,14 +9,31 @@ const props = defineProps({
   },
   counts: {
     type: Object,
-    required: true,
+    default: () => ({}),
+  },
+  options: {
+    type: Array,
+    default: () => CATEGORY_OPTIONS,
+  },
+  showCounts: {
+    type: Boolean,
+    default: true,
+  },
+  ariaLabel: {
+    type: String,
+    default: '新闻分类',
+  },
+  variant: {
+    type: String,
+    default: 'tabs',
+    validator: (value) => ['tabs', 'grid'].includes(value),
   },
 });
 
 const emit = defineEmits(['update:modelValue']);
 
 const categoriesWithCounts = computed(() =>
-  CATEGORY_OPTIONS.map((category) => ({
+  props.options.map((category) => ({
     ...category,
     count: category.value === '全部' ? props.counts.total : props.counts[category.value] || 0,
   })),
@@ -24,7 +41,7 @@ const categoriesWithCounts = computed(() =>
 </script>
 
 <template>
-  <nav class="category-tabs" aria-label="新闻分类">
+  <nav :class="[variant === 'grid' ? 'category-grid' : 'category-tabs', { 'category-tabs-without-counts': !showCounts }]" :aria-label="ariaLabel">
     <button
       v-for="category in categoriesWithCounts"
       :key="category.value"
@@ -34,7 +51,7 @@ const categoriesWithCounts = computed(() =>
       @click="emit('update:modelValue', category.value)"
     >
       <span>{{ category.label }}</span>
-      <span class="category-count">{{ category.count }}</span>
+      <span v-if="showCounts" class="category-count">{{ category.count }}</span>
     </button>
   </nav>
 </template>

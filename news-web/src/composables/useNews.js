@@ -1,36 +1,11 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { fetchNews, refreshNews } from '../api/newsApi';
 import { CATEGORY_OPTIONS } from '../utils/categories';
+import { DEFAULT_NEWS_PAGE_SIZE, normalizeNewsResponse, sortNewsByDateTime } from '../utils/newsData';
 import { loadNewsCache, saveNewsCache } from '../utils/storage';
 
 const POLL_INTERVAL = 60 * 1000;
-const PAGE_SIZE = 8;
-
-function getNewsTimestamp(item) {
-  if (item?.publishedAt) {
-    const publishedTimestamp = new Date(item.publishedAt).getTime();
-    if (!Number.isNaN(publishedTimestamp)) return publishedTimestamp;
-  }
-
-  const dateText = item?.date || '';
-  const timeText = item?.time || '';
-  const normalizedTime = /^\d{1,2}:\d{2}$/.test(timeText) ? timeText : '00:00';
-  const date = dateText ? new Date(`${dateText}T${normalizedTime}:00`) : new Date(timeText);
-  const timestamp = date.getTime();
-
-  return Number.isNaN(timestamp) ? 0 : timestamp;
-}
-
-function sortNewsByDateTime(newsItems) {
-  return newsItems
-    .map((item, index) => ({
-      item,
-      index,
-      timestamp: getNewsTimestamp(item),
-    }))
-    .sort((current, next) => next.timestamp - current.timestamp || current.index - next.index)
-    .map(({ item }) => item);
-}
+const PAGE_SIZE = DEFAULT_NEWS_PAGE_SIZE;
 
 function buildStats(newsItems) {
   const stats = {
@@ -41,29 +16,10 @@ function buildStats(newsItems) {
   };
 
   CATEGORY_OPTIONS.filter((item) => item.value !== '全部').forEach((category) => {
-    stats[category.value] = newsItems.filter((item) => item.category === category.value).length;
+    stats[category.value] = newsItems.filter((item) => item.category === category.value || item.topics?.includes(category.value)).length;
   });
 
   return stats;
-}
-
-function normalizeNewsResponse(data) {
-  const items = data?.items || data?.news || [];
-
-  return {
-    date: data?.date || '',
-    updatedAt: data?.updatedAt || null,
-    isRefreshing: Boolean(data?.isRefreshing),
-    categories: data?.categories || CATEGORY_OPTIONS.filter((item) => item.value !== '全部').map((item) => item.value),
-    counts: data?.counts || null,
-    pagination: data?.pagination || {
-      page: 1,
-      pageSize: PAGE_SIZE,
-      total: items.length,
-    },
-    items,
-    message: data?.message || '',
-  };
 }
 
 export function useNews() {
@@ -118,17 +74,14 @@ export function useNews() {
       });
       const normalizedData = normalizeNewsResponse(data);
 
-      if (normalizedData.items.length || normalizedData.isRefreshing) {
-        setNewsData(normalizedData, '', { append });
+      setNewsData(normalizedData, '', { append });
 
-        if (!normalizedData.items.length) {
-          errorMessage.value = normalizedData.message || '新闻正在生成，请稍后刷新';
-        }
-
-        return normalizedData;
+      const total = normalizedData.counts?.total ?? normalizedData.pagination.total;
+      if (!normalizedData.items.length && (normalizedData.isRefreshing || total === 0)) {
+        errorMessage.value = normalizedData.message || '新闻正在生成，请稍后刷新';
       }
 
-      throw new Error(normalizedData.message || '新闻数据为空');
+      return normalizedData;
     } catch (error) {
       if (append) {
         errorMessage.value = error.message || '加载更多失败';

@@ -1,6 +1,7 @@
 @media (min-width: 768px) {
   :root {
     --header-height: 76px;
+    --top-nav-offset: max(60px, calc(52px + env(safe-area-inset-top)));
   }
 
   .app-header {
@@ -17,30 +18,66 @@
     height: 38px;
   }
 
-  .home-page {
-    padding-top: 8px;
-    padding-right: 24px;
+  .app-top-bar {
+    min-height: 60px;
+    padding: max(8px, env(safe-area-inset-top)) max(28px, env(safe-area-inset-right)) 8px max(28px, env(safe-area-inset-left));
+  }
+
+  .app-brand {
+    flex: 0 0 auto;
+    font-size: 1.62rem;
+  }
+
+  .desktop-category-tabs {
+    display: flex;
+    flex: 0 1 auto;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
+  .mobile-category-trigger {
+    display: none;
+  }
+
+  .news-list {
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .news-card {
+    min-height: 118px;
+    padding: 14px 16px;
+  }
+
+  .news-card-image-button {
+    flex-basis: 128px;
+    width: 128px;
+    min-height: 92px;
+  }
+
+  .detail-page {
+    padding-top: 28px;
+    padding-bottom: 72px;
+  }
+
+  .detail-article {
+    gap: 26px;
+  }
+
+  .detail-header h1 {
+    font-size: 1.72rem;
+  }
+
+  .detail-content p,
+  .detail-status,
+  .detail-error {
+    font-size: 14px;
+  }
+
+  .load-more-row {
+    padding-right: 0;
     padding-bottom: 108px;
-    padding-left: 24px;
-  }
-
-  .home-hero {
-    padding: 78px 0 84px;
-  }
-
-  .home-hero h1 {
-    font-size: 3.25rem;
-  }
-
-  .home-hero p {
-    font-size: 1.05rem;
-  }
-
-  .category-tabs {
-    margin-right: -24px;
-    margin-left: -24px;
-    padding-right: 24px;
-    padding-left: 24px;
+    padding-left: 0;
   }
 
 }
@@ -50,10 +87,10 @@
     --content-width: 820px;
   }
 
-  .home-hero {
-    padding-top: 88px;
-    padding-bottom: 92px;
+  .detail-page {
+    --content-width: 820px;
   }
+
 }
 
 @media (max-width: 420px) {
@@ -76,31 +113,28 @@
     padding: 0 8px;
   }
 
-  .category-tab {
-    padding: 4px 10px;
+  .app-top-bar {
+    gap: 5px;
+    padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 6px max(8px, env(safe-area-inset-left));
   }
 
-  .home-page {
-    padding-top: 8px;
-    padding-bottom: 36px;
+  .app-brand {
+    font-size: 1.6rem;
   }
 
-  .home-hero {
-    padding: 18px 0 6px;
+  .app-nav-actions {
+    gap: 3px;
   }
 
-  .home-hero h1 {
-    font-size: 2.45rem;
+  .glass-icon-button,
+  .nav-icon-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
   }
 
-  .home-hero p {
-    font-size: 0.92rem;
+  .category-sheet {
+    border-radius: 20px;
   }
 
-  .toast-message {
-    right: 12px;
-    bottom: 14px;
-    left: 12px;
-    text-align: center;
-  }
 }

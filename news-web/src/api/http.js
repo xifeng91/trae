@@ -5,6 +5,18 @@ const http = axios.create({
   timeout: 8000,
 });
 
+export function buildApiUrl(path) {
+  const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+  const normalizedBase = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  if (/^https?:\/\//i.test(normalizedBase)) {
+    return `${normalizedBase}${normalizedPath}`;
+  }
+
+  return `${normalizedBase}${normalizedPath}`;
+}
+
 http.interceptors.response.use(
   (response) => response.data,
   (error) => {

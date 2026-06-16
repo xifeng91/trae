@@ -50,11 +50,16 @@ function addMinutes(value, minutes) {
   return new Date(toDate(value).getTime() + minutes * 60 * 1000);
 }
 
+function subtractHours(value, hours) {
+  return new Date(toDate(value).getTime() - hours * 60 * 60 * 1000);
+}
+
 module.exports = {
   addMinutes,
   getDateKey,
   getDateTimeText,
   getTimeText,
   isSameAppDate,
+  subtractHours,
   toDate,
 };

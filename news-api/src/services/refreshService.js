@@ -1,12 +1,14 @@
 const env = require('../config/env');
-const { ALL_CATEGORY } = require('../constants/categories');
-const { addMinutes, getDateKey, getDateTimeText, toDate } = require('../utils/dateUtils');
+const { ALL_CATEGORY, INVESTMENT_TOPIC } = require('../constants/categories');
+const { addMinutes, getDateTimeText, toDate } = require('../utils/dateUtils');
 const { fetchAllNews } = require('./newsFetchService');
 const { cleanNewsItems } = require('./newsCleanService');
-const { enrichNewsItems } = require('./aiNewsService');
-const { clearOutdatedData, loadTodayData, saveTodayData } = require('./newsStoreService');
+const { findNewsItemById, loadTodayData, saveTodayData, updateNewsItem } = require('./newsStoreService');
+const { findCachedSearchItemById, updateCachedSearchItem } = require('./searchCacheService');
+const { streamAiInterpretation } = require('./aiNewsService');
 
 let runningPromise = null;
+const interpretationPromises = new Map();
 
 const refreshState = {
   status: 'idle',
@@ -47,12 +49,73 @@ function isCacheStale(data) {
 }
 
 function sanitizeNewsItem(item) {
-  const { rawSummary, ...publicItem } = item;
-  return publicItem;
+  const { rawSummary, interpretation, aiStatus, analysisType, signals, ...publicItem } = item;
+
+  return {
+    ...publicItem,
+    interpretationStatus: item.interpretation ? 'success' : item.interpretationStatus || item.aiStatus || 'pending',
+  };
+}
+
+function findNewsItemAcrossStores(newsId) {
+  const localItem = findNewsItemById(newsId);
+  if (localItem) {
+    return {
+      item: localItem,
+      store: 'local',
+    };
+  }
+
+  const cachedSearchItem = findCachedSearchItemById(newsId);
+  if (cachedSearchItem) {
+    return {
+      item: cachedSearchItem,
+      store: 'search',
+    };
+  }
+
+  return null;
+}
+
+function updateNewsItemAcrossStores(newsId, patch = {}, store = 'local') {
+  if (store === 'search') return updateCachedSearchItem(newsId, patch);
+  return updateNewsItem(newsId, patch);
+}
+
+function isReusableInterpretation(item = {}) {
+  return Boolean(item.interpretation) && (item.interpretationStatus === 'success' || item.aiStatus === 'success');
+}
+
+function buildExistingItemMap(existingItems = []) {
+  const itemMap = new Map();
+
+  for (const item of existingItems) {
+    if (item.sourceUrl) itemMap.set(`url:${item.sourceUrl}`, item);
+    itemMap.set(`title:${item.title}`, item);
+  }
+
+  return itemMap;
+}
+
+function mergeExistingInterpretations(newsItems, existingItems = []) {
+  const existingItemMap = buildExistingItemMap(existingItems);
+
+  return newsItems.map((item) => {
+    const existingItem = existingItemMap.get(`url:${item.sourceUrl}`) || existingItemMap.get(`title:${item.title}`);
+    if (!isReusableInterpretation(existingItem)) return item;
+
+    return {
+      ...item,
+      interpretation: existingItem.interpretation,
+      interpretationStatus: existingItem.interpretationStatus || existingItem.aiStatus || 'success',
+      aiStatus: existingItem.aiStatus || existingItem.interpretationStatus || 'success',
+      analysisType: existingItem.analysisType || '',
+      signals: Array.isArray(existingItem.signals) ? existingItem.signals : [],
+    };
+  });
 }
 
 async function executeRefresh(options = {}) {
-  const todayKey = getDateKey();
   const taskId = buildTaskId();
 
   refreshState.status = 'running';
@@ -67,17 +130,16 @@ async function executeRefresh(options = {}) {
   console.log('='.repeat(56));
 
   try {
-    clearOutdatedData(todayKey);
-    const previousData = loadTodayData(todayKey);
+    const previousData = loadTodayData();
     const rawItems = await fetchAllNews();
     const cleanItems = cleanNewsItems(rawItems, {
-      todayKey,
       maxPerCategory: env.maxNewsPerCategory,
+      retentionHours: env.newsRetentionHours,
     });
 
     if (cleanItems.length === 0) {
-      refreshState.message = previousData.items.length > 0 ? '本轮未获取到新新闻，继续使用当前缓存' : '本轮未获取到当天新闻';
-      const fallbackData = previousData.items.length > 0 ? previousData : saveTodayData([], { todayKey });
+      refreshState.message = previousData.items.length > 0 ? '本轮未获取到新新闻，继续使用当前缓存' : '本轮未获取到近 24 小时新闻';
+      const fallbackData = previousData.items.length > 0 ? previousData : saveTodayData([]);
       refreshState.status = 'idle';
       refreshState.finishedAt = new Date().toISOString();
       refreshState.lastRunAt = fallbackData.updatedAt || refreshState.finishedAt;
@@ -86,10 +148,7 @@ async function executeRefresh(options = {}) {
       return fallbackData;
     }
 
-    const enrichedItems = await enrichNewsItems(cleanItems, {
-      existingItems: previousData.items,
-    });
-    const savedData = saveTodayData(enrichedItems, { todayKey });
+    const savedData = saveTodayData(mergeExistingInterpretations(cleanItems, previousData.items));
 
     refreshState.status = 'idle';
     refreshState.lastRunAt = savedData.updatedAt;
@@ -105,7 +164,7 @@ async function executeRefresh(options = {}) {
     refreshState.lastError = error.message;
     refreshState.message = '刷新失败，继续使用旧缓存';
     console.error(`[刷新] 失败: ${error.stack || error.message}`);
-    return loadTodayData(todayKey);
+    return loadTodayData();
   } finally {
     runningPromise = null;
   }
@@ -156,14 +215,21 @@ function getNewsPage(query = {}) {
   const category = query.category || ALL_CATEGORY;
   const page = Math.max(Number(query.page) || 1, 1);
   const pageSize = Math.min(Math.max(Number(query.pageSize) || env.newsPageSize, 1), env.maxNewsPerCategory);
-  const filteredItems =
-    category === ALL_CATEGORY ? data.items : data.items.filter((item) => item.category === category);
+  const filteredItems = data.items.filter((item) => {
+    if (category === ALL_CATEGORY) return true;
+    if (category === INVESTMENT_TOPIC) return Array.isArray(item.topics) && item.topics.includes(INVESTMENT_TOPIC);
+
+    return item.category === category;
+  });
   const startIndex = (page - 1) * pageSize;
   const items = filteredItems.slice(startIndex, startIndex + pageSize).map(sanitizeNewsItem);
 
   return {
     date: data.date,
     updatedAt: data.updatedAt,
+    retentionHours: data.retentionHours,
+    windowStartAt: data.windowStartAt,
+    windowEndAt: data.windowEndAt,
     isRefreshing: refreshState.status === 'running',
     categories: data.categories,
     counts: data.counts,
@@ -173,13 +239,116 @@ function getNewsPage(query = {}) {
       total: filteredItems.length,
     },
     items,
-    message: data.items.length === 0 ? '当天新闻正在准备中' : '',
+    message: data.items.length === 0 ? '近 24 小时新闻正在准备中' : '',
   };
 }
 
+function getNewsDetail(newsId) {
+  const found = findNewsItemAcrossStores(newsId);
+  if (!found) return null;
+
+  return {
+    ...sanitizeNewsItem(found.item),
+    origin: found.item.origin || (found.store === 'search' ? 'web' : 'local'),
+    originLabel: found.item.originLabel || (found.store === 'search' ? '联网补充' : '本地已收录'),
+  };
+}
+
+function getCachedInterpretation(newsId, options = {}) {
+  const found = findNewsItemAcrossStores(newsId);
+  if (!found) return null;
+  if (!isReusableInterpretation(found.item) || options.force) return {
+    item: found.item,
+    store: found.store,
+    cached: false,
+  };
+
+  return {
+    item: found.item,
+    store: found.store,
+    cached: true,
+    result: {
+      interpretation: found.item.interpretation,
+      interpretationStatus: found.item.interpretationStatus || found.item.aiStatus || 'success',
+      aiStatus: found.item.aiStatus || found.item.interpretationStatus || 'success',
+      analysisType: found.item.analysisType || '',
+      signals: found.item.signals || [],
+    },
+  };
+}
+
+async function streamNewsInterpretation(newsId, handlers = {}, options = {}) {
+  const cached = getCachedInterpretation(newsId, options);
+  if (!cached) {
+    const error = new Error('新闻不存在或已过期');
+    error.status = 404;
+    throw error;
+  }
+
+  if (cached.cached) {
+    handlers.onMeta?.({
+      status: 'cached',
+      analysisType: cached.result.analysisType,
+      signals: cached.result.signals,
+    });
+    handlers.onDelta?.(cached.result.interpretation);
+    handlers.onDone?.(cached.result);
+    return cached.result;
+  }
+
+  if (interpretationPromises.has(newsId)) {
+    const error = new Error('这条新闻正在生成解读，请稍后重试');
+    error.status = 409;
+    throw error;
+  }
+
+  updateNewsItemAcrossStores(
+    newsId,
+    {
+      interpretationStatus: 'generating',
+      aiStatus: 'generating',
+    },
+    cached.store,
+  );
+
+  handlers.onMeta?.({
+    status: 'generating',
+  });
+
+  const promise = streamAiInterpretation(cached.item, {
+    onDelta: handlers.onDelta,
+  });
+  interpretationPromises.set(newsId, promise);
+
+  try {
+    const result = await promise;
+    if (result.interpretationStatus === 'success' || result.aiStatus === 'success') {
+      updateNewsItemAcrossStores(newsId, result, cached.store);
+    } else {
+      updateNewsItemAcrossStores(
+        newsId,
+        {
+          interpretation: '',
+          interpretationStatus: 'pending',
+          aiStatus: 'pending',
+          analysisType: result.analysisType || '',
+          signals: result.signals || [],
+        },
+        cached.store,
+      );
+    }
+    handlers.onDone?.(result);
+    return result;
+  } finally {
+    interpretationPromises.delete(newsId);
+  }
+}
+
 module.exports = {
+  getNewsDetail,
   getNewsPage,
   getRefreshStatus,
+  streamNewsInterpretation,
   triggerRefresh,
   triggerRefreshIfNeeded,
 };

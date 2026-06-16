@@ -1,8 +1,11 @@
 <script setup>
-import { ChevronDown, ExternalLink } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { ExternalLink, ImageIcon } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { CATEGORY_META } from '../utils/categories';
-import { formatNewsDateTime, getSourceHost, splitParagraphs } from '../utils/format';
+import { formatNewsDateTime } from '../utils/format';
+import ImagePreview from './ImagePreview.vue';
+import { getRenderableImageUrl } from '../utils/images';
 
 const props = defineProps({
   news: {
@@ -11,77 +14,109 @@ const props = defineProps({
   },
 });
 
-const isExpanded = ref(false);
-
+const router = useRouter();
+const isPreviewOpen = ref(false);
 const categoryColor = computed(() => CATEGORY_META[props.news.category]?.color || '#64748b');
 const displayDateTime = computed(() => formatNewsDateTime(props.news.date, props.news.time, props.news.publishedAt));
-const paragraphs = computed(() => splitParagraphs(props.news.interpretation));
-const sourceHost = computed(() => getSourceHost(props.news.sourceUrl));
+const overviewText = computed(() => props.news.overview || props.news.summary || props.news.shortSummary || '暂无内容总览');
+const imageUrl = computed(() => getRenderableImageUrl(props.news.imageUrl));
+const imageAlt = computed(() => props.news.imageAlt || props.news.title || '新闻图片');
+const isImageVisible = ref(Boolean(imageUrl.value));
+
+function goToDetail() {
+  if (!props.news.id) return;
+  router.push({ name: 'news-detail', params: { id: props.news.id } });
+}
+
+function handleCardKeydown(event) {
+  if (event.target !== event.currentTarget) return;
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+
+  event.preventDefault();
+  goToDetail();
+}
+
+function openImagePreview() {
+  if (!imageUrl.value) return;
+  isPreviewOpen.value = true;
+}
+
+function handleImageError() {
+  isImageVisible.value = false;
+  isPreviewOpen.value = false;
+}
+
+watch(imageUrl, (url) => {
+  isImageVisible.value = Boolean(url);
+  if (!url) isPreviewOpen.value = false;
+});
 </script>
 
 <template>
   <article
-    class="overflow-hidden rounded-lg transition-[background-color,box-shadow] duration-200"
-    :class="
-      isExpanded
-        ? 'bg-[#f3f7ff] shadow-[0_18px_42px_rgba(0,102,204,0.18)] dark:bg-[#162033] dark:shadow-[0_20px_48px_rgba(0,102,204,0.22)]'
-        : 'bg-[var(--surface)] shadow-[0_10px_28px_rgba(15,23,42,0.08)] dark:shadow-[0_14px_34px_rgba(0,0,0,0.26)]'
-    "
+    class="news-card"
+    role="link"
+    tabindex="0"
+    :aria-label="`查看新闻详情：${news.title}`"
+    @click="goToDetail"
+    @keydown="handleCardKeydown"
   >
-    <button
-      class="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-2.5 bg-transparent p-3 text-left text-inherit transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--accent)] md:px-4 md:py-3.5"
-      type="button"
-      @click="isExpanded = !isExpanded"
-    >
-      <span class="flex min-w-0 items-center gap-2.5">
+    <div class="min-w-0 flex-1">
+      <div class="flex min-w-0 items-center gap-2.5">
         <span
           class="inline-flex h-6 shrink-0 items-center justify-center rounded-md px-2 text-[11px] font-semibold leading-none text-white"
           :style="{ backgroundColor: categoryColor }"
         >
           {{ news.category }}
         </span>
-        <span class="truncate text-[13px] font-medium leading-6 text-[#0b0b0e] dark:text-[var(--text-primary)]">
+        <h2 class="min-w-0 flex-1 truncate text-[13px] font-semibold leading-6 text-[#0b0b0e] dark:text-[var(--text-primary)]">
           {{ news.title }}
-        </span>
-      </span>
+        </h2>
+      </div>
 
-      <ChevronDown
-        class="mt-[3px] shrink-0 text-[var(--text-muted)] transition duration-200"
-        :class="{ 'rotate-180': isExpanded }"
-        :size="18"
+      <p class="mt-1.5 line-clamp-3 text-[11px] leading-[1.72] text-[#747a96] dark:text-[var(--text-secondary)]">
+        {{ overviewText }}
+      </p>
+
+      <p class="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] text-[#4c4f5d] dark:text-[var(--text-secondary)]">
+        <a
+          v-if="news.sourceUrl"
+          class="inline-flex min-w-0 items-center gap-1 font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+          :href="news.sourceUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          @click.stop
+        >
+          <span class="truncate">{{ news.source }}</span>
+          <ExternalLink :size="12" aria-hidden="true" />
+        </a>
+        <span v-else class="min-w-0 truncate font-medium">{{ news.source }}</span>
+        <span class="shrink-0 text-[#b8c0d2] dark:text-[var(--line)]" aria-hidden="true">·</span>
+        <span class="shrink-0 font-normal">{{ displayDateTime }}</span>
+      </p>
+    </div>
+
+    <button
+      v-if="isImageVisible"
+      class="news-card-image-button"
+      type="button"
+      :aria-label="`预览图片：${imageAlt}`"
+      @click.stop="openImagePreview"
+    >
+      <img
+        class="h-full w-full object-cover"
+        :src="imageUrl"
+        :alt="imageAlt"
+        loading="lazy"
+        decoding="async"
+        referrerpolicy="no-referrer"
+        @error="handleImageError"
       />
-
-      <span class="col-span-full grid min-w-0 gap-1.5">
-        <span class="line-clamp-3 overflow-hidden text-[11px] leading-[1.72] text-[#747a96] dark:text-[var(--text-secondary)]">
-          {{ news.shortSummary || news.summary }}
-        </span>
-        <span class="flex flex-wrap items-center gap-2 text-[11px] font-medium text-[#747a96] dark:text-[var(--text-secondary)]">
-          <span>{{ news.source }}</span>
-          <span class="text-[var(--line)]" aria-hidden="true">•</span>
-          <span>{{ displayDateTime }}</span>
-        </span>
+      <span class="news-card-image-icon" aria-hidden="true">
+        <ImageIcon :size="14" />
       </span>
     </button>
 
-    <div
-      class="grid max-h-0 gap-4 overflow-hidden px-4 transition-[max-height,padding] duration-300"
-      :class="isExpanded ? 'max-h-[2400px] border-t border-[var(--line)] py-4 md:pb-4 md:pt-3.5' : ''"
-    >
-      <section class="detail-block">
-        <span class="detail-label">一句话概括</span>
-        <p>{{ news.shortSummary || news.summary || '暂无摘要' }}</p>
-      </section>
-
-      <section class="detail-block">
-        <span class="detail-label">AI 解读</span>
-        <p v-for="paragraph in paragraphs" :key="paragraph">{{ paragraph }}</p>
-        <p v-if="paragraphs.length === 0">暂无解读内容。</p>
-      </section>
-
-      <a v-if="news.sourceUrl" class="source-link" :href="news.sourceUrl" target="_blank" rel="noreferrer">
-        <span>{{ sourceHost || news.source }}</span>
-        <ExternalLink :size="15" />
-      </a>
-    </div>
+    <ImagePreview v-model="isPreviewOpen" :src="imageUrl" :alt="imageAlt" />
   </article>
 </template>
