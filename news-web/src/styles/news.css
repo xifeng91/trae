@@ -335,13 +335,19 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  font-family: var(--font-brand);
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .detail-error {
   margin: 0;
   color: #b42318;
+  font-family: var(--font-brand);
   font-size: 13px;
+  font-weight: 400;
   line-height: 1.8;
+  letter-spacing: 0;
 }
 
 .image-preview {
@@ -469,8 +475,10 @@
   min-height: 44px;
   gap: 8px;
   color: var(--text-muted);
+  font-family: var(--font-brand);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .load-more-button {

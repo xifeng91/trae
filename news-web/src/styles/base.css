@@ -1,6 +1,6 @@
 @font-face {
   font-family: "Zhi Mang Xing Local";
-  src: url("../assets/fonts/ZhiMangXing-Regular-minified.ttf") format("truetype");
+  src: url("../assets/fonts/ZhiMangXing-Regular-minified.woff2") format("woff2");
   font-display: swap;
   font-style: normal;
   font-weight: 400;
@@ -94,6 +94,12 @@ a {
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+}
+
+.brand-status-text {
+  font-family: var(--font-brand);
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .spinning,

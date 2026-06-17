@@ -234,11 +234,11 @@ onBeforeUnmount(() => {
     </header>
 
     <section class="grid gap-3 px-3 py-3 md:px-0 md:py-4">
-      <p v-if="statusText" class="min-h-6 px-1 text-xs font-semibold text-[var(--text-muted)]" aria-live="polite">
+      <p v-if="statusText" class="brand-status-text min-h-6 px-1 text-xs text-[var(--text-muted)]" aria-live="polite">
         {{ statusText }}
       </p>
 
-      <section v-if="isSearching" class="flex min-h-[180px] items-center justify-center gap-2 text-xs font-semibold text-[var(--text-muted)]">
+      <section v-if="isSearching" class="brand-status-text flex min-h-[180px] items-center justify-center gap-2 text-xs text-[var(--text-muted)]">
         <LoaderCircle class="spinning shrink-0" :size="16" />
         <span>正在搜索</span>
       </section>
@@ -248,7 +248,7 @@ onBeforeUnmount(() => {
       </section>
 
       <section v-else class="grid min-h-[240px] place-items-center px-4 text-center">
-        <p class="m-0 text-xs font-semibold text-[#A4A9BC]">{{ emptyText }}</p>
+        <p class="brand-status-text m-0 text-xs text-[#A4A9BC]">{{ emptyText }}</p>
       </section>
     </section>
 

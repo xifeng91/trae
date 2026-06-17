@@ -172,7 +172,7 @@ onBeforeUnmount(() => {
           <button v-else-if="hasNextPage" class="load-more-button" type="button" @click="handleLoadMore">
             <span>加载更多新闻</span>
           </button>
-          <p v-else class="min-h-11 py-3 text-center text-xs font-semibold text-[#A4A9BC]">
+          <p v-else class="brand-status-text min-h-11 py-3 text-center text-xs text-[#A4A9BC]">
             - 已加载近 24 小时全部新闻 -
           </p>
         </div>

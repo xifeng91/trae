@@ -9,6 +9,6 @@ defineProps({
 
 <template>
   <Transition name="toast">
-    <div v-if="message" class="toast-message">{{ message }}</div>
+    <div v-if="message" class="toast-message brand-status-text">{{ message }}</div>
   </Transition>
 </template>
