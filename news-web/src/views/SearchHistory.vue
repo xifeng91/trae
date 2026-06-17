@@ -85,7 +85,7 @@ onMounted(loadHistory);
       </section>
 
       <section v-else class="grid min-h-[240px] place-items-center px-4 text-center">
-        <p class="m-0 text-xs font-semibold text-[#A4A9BC]">{{ emptyText }}</p>
+        <p class="brand-status-text m-0 text-xs text-[#A4A9BC]">{{ emptyText }}</p>
       </section>
     </section>
   </main>
